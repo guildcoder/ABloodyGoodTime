@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>A Bloody Good Time — Home</title>
+
+  <!-- Web App manifest & iOS app-like meta -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="BGT">
+  <link rel="apple-touch-icon" href="assets/app-icon-192.png">
+  <meta name="theme-color" content="#0b0b0b">
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="page-home">
+  <!-- Waiver modal (shows on first load until user accepts or opts out) -->
+  <div id="waiver" class="modal shown" role="dialog" aria-modal="true" aria-labelledby="waiverTitle">
+    <div class="modal-inner">
+      <h1 id="waiverTitle">A Bloody Good Warning</h1>
+      <p class="lead">
+        This site contains sudden, startling audiovisual moments — we call them “jumps.” They’re ruthless.
+        If loud or sudden images/sounds can affect you (epilepsy, heart conditions, anxiety disorders, PTSD, etc.), seriously consider leaving or toggling the safe mode below.
+      </p>
+
+      <p class="entice">
+        For everyone else: this is what makes the show fun. Dare to proceed and you might be rewarded
+        with spine-tingling thrills. Dare not — that’s fine too.
+      </p>
+
+      <ul class="waiver-bullets">
+        <li>Jumpscares may occur randomly between 1.5 and 3 minutes.</li>
+        <li>They are fullscreen GIF flashes + sound.</li>
+        <li>Playing audio/video anywhere on the site pauses all jumpscares while playing.</li>
+      </ul>
+
+      <div class="waiver-actions">
+        <button id="acceptBtn" class="btn btn-danger">I accept the ritual — show me fear</button>
+        <button id="safeBtn" class="btn">Enable Safe Mode (no jumpscares)</button>
+        <button id="leaveBtn" class="btn btn-muted">Nah, I’ll come back later</button>
+      </div>
+
+      <div class="waiver-footnote">
+        By accepting you acknowledge an awareness of possible physical or psychological reactions and proceed at your own risk.
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <header class="site-header">
+    <img src="assets/logo.png" alt="A Bloody Good Time logo" class="logo">
+  </header>
+
+  <main class="home-main">
+    <nav class="home-grid" role="navigation" aria-label="Main navigation">
+      <a class="home-card" href="listen.html" id="link-listen">
+        <img src="assets/icon-listen.png" alt="Listen icon">
+        <span>Listen</span>
+      </a>
+
+      <a class="home-card" href="watch.html" id="link-watch">
+        <img src="assets/icon-watch.png" alt="Watch icon">
+        <span>Watch</span>
+      </a>
+
+      <a class="home-card" href="https://www.printify.com" id="link-shop" target="_blank" rel="noopener">
+        <img src="assets/icon-shop.png" alt="Shop icon">
+        <span>Shop</span>
+      </a>
+    </nav>
+
+    <section class="about">
+      <h2>About the podcast</h2>
+      <p id="pod-blurb">
+        A Bloody Good Time is a horror film review podcast — we celebrate the thrills, the blood, the
+        one-liners, and yes, the jump scares. New episodes weekly.
+      </p>
+    </section>
+  </main>
+
+  <!-- Jumpscare overlay container (hidden; will be used by app.js) -->
+  <div id="scare-overlay" class="scare-overlay" aria-hidden="true"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
