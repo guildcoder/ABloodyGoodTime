@@ -50,9 +50,8 @@
   });
 
   leaveBtn.addEventListener('click', () => {
-    // Minimal action: send them to an explanation page (or close modal)
     waiver.style.display = 'none';
-    // You might optionally redirect them offsite:
+    // Optional redirect if you want to send them away:
     // window.location.href = 'about:blank';
   });
 
@@ -65,30 +64,26 @@
   }
 
   function isMediaPlaying() {
-    // 1) sessionStorage flag can be set by other pages (listen/watch) using their players (we set examples in their pages)
+    // 1) sessionStorage flag can be set by other pages (listen/watch)
     if (sessionStorage.getItem(PLAY_FLAG) === '1') return true;
 
-    // 2) check for native audio/video playing on this page
+    // 2) check for native audio/video
     const medias = [...document.querySelectorAll('audio, video')];
-    const playing = medias.some(m => {
-      return !m.paused && !m.ended && m.currentTime > 0;
-    });
-    if (playing) return true;
-
-    return false;
+    return medias.some(m => !m.paused && !m.ended && m.currentTime > 0);
   }
 
   function scheduleNextScare() {
     clearTimeout(scareTimeoutId);
     if (isSafeMode()) return;
-    // random between 90 and 180 seconds (ms)
-    const ms = (90 + Math.random() * 90) * 1000;
+
+    // Pick a random time within the next 60 seconds
+    const ms = Math.floor(Math.random() * 60_000);
     scareTimeoutId = setTimeout(triggerScareIfAble, ms);
+
     console.log('[BGT] Next scare scheduled in', Math.round(ms/1000), 's');
   }
 
   function startJumpscareTimer() {
-    // start only if not safe mode and waiver accepted
     if (isSafeMode()) {
       console.log('[BGT] Safe mode enabled - jumpscares disabled');
       return;
@@ -99,13 +94,13 @@
   async function triggerScareIfAble() {
     if (isSafeMode()) return;
     if (isMediaPlaying()) {
-      // if media playing, re-schedule shortly later to poll again
       console.log('[BGT] media playing — deferring scare');
-      scareTimeoutId = setTimeout(triggerScareIfAble, 15 * 1000); // check again in 15s
+      scareTimeoutId = setTimeout(triggerScareIfAble, 15_000);
       return;
     }
 
     triggerScare();
+    // schedule next scare after current finishes
     scheduleNextScare();
   }
 
@@ -115,55 +110,52 @@
 
     // pick random scare
     const pick = SCARES[Math.floor(Math.random() * SCARES.length)];
-    // create image and audio
+
     overlay.innerHTML = '';
     const img = document.createElement('img');
     img.src = pick.img;
     img.alt = 'scare';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
     overlay.appendChild(img);
 
-    // preload audio
+    // play audio
     const sfx = new Audio(pick.sfx);
     sfx.preload = 'auto';
     sfx.volume = 1.0;
+    sfx.play().catch(()=>{});
 
-    // show overlay briefly for a heartbeat — configurable
     overlay.classList.add('active');
-    // Play sound slightly offset to create impact
-    sfx.play().catch(()=>{ /* autoplay might be blocked; still show frame */ });
 
-    // Very short duration: ~150–350ms
-    const duration = 150 + Math.random() * 200;
+    // keep for 6 seconds
     setTimeout(() => {
       overlay.classList.remove('active');
       overlay.innerHTML = '';
       scareActive = false;
-    }, duration);
+    }, 6000);
   }
 
-  // Pause/resume scheduling when media play flags change.
-  // We'll poll for the session flag changes, plus listen to visibility change to avoid showing when not visible.
-  let pollInterval = setInterval(() => {
-    // If user accepted but safe mode not on and no scheduled, ensure there's a schedule
+  // Poll to make sure scare timer is always active when it should be
+  setInterval(() => {
     const accepted = localStorage.getItem(WAIVER_KEY) === '1';
     if (accepted && !isSafeMode() && !scareTimeoutId) scheduleNextScare();
   }, 10_000);
 
-  // Pause scheduling when page is hidden (browser tab not active)
+  // Pause scheduling when tab hidden
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       clearTimeout(scareTimeoutId);
       scareTimeoutId = null;
     } else {
-      // when tab becomes visible, reschedule a near scare unless safe mode
       if (!isSafeMode()) scheduleNextScare();
     }
   });
 
-  // On load:
+  // Init
   showOrHideWaiver();
 
-  // Expose for debugging
+  // Debug helpers
   window.BGT = {
     triggerScare,
     scheduleNextScare,
