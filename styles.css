@@ -1,10 +1,10 @@
 /* Basic reset */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html,body { height:100%; background:#040404; color:#eee; font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+html,body { height:100%; color:#eee; font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
 body {
   margin: 0;
   padding: 0;
-  background: url("assets/images/background.jpg") no-repeat center center fixed;
+  background: url("assets/background.jpg") no-repeat center center fixed;
   background-size: cover;   /* Ensures it stretches across screen */
   color: #f5f5f5;           /* Light text for contrast (can adjust later) */
   font-family: "Courier New", Courier, monospace; /* Placeholder font */
