@@ -1,13 +1,14 @@
 /* app.js
   - Waiver modal logic (accept/safe/leave)
-  - Jumpscare engine with 3 gifs + 3 sounds
-  - Pauses while media is playing (audio/video or when watch/listen pages set session flag)
+  - Jumpscare engine with 4 gifs + 4 sounds
+  - Each scare: random within a minute, 3s full screen, no overlap
+  - Pauses while media is playing
 */
 
 (() => {
   const WAIVER_KEY = 'bgt_waiver_accepted';
   const SAFE_KEY = 'bgt_safe_mode';
-  const PLAY_FLAG = 'bgt_media_playing'; // sessionStorage flag set by other pages or by media events.
+  const PLAY_FLAG = 'bgt_media_playing'; // sessionStorage flag set by listen/watch pages
 
   // Elements
   const waiver = document.getElementById('waiver');
@@ -16,20 +17,20 @@
   const leaveBtn = document.getElementById('leaveBtn');
   const overlay = document.getElementById('scare-overlay');
 
-  // Scare assets (drop your files in /assets and update filenames as needed)
+  // Scare assets
   const SCARES = [
     { img: 'assets/scare1.gif', sfx: 'assets/scare1.mp3' },
     { img: 'assets/scare2.gif', sfx: 'assets/scare2.mp3' },
-    { img: 'assets/scare3.gif', sfx: 'assets/scare3.mp3' }
+    { img: 'assets/scare3.gif', sfx: 'assets/scare3.mp3' },
+    { img: 'assets/scare4.gif', sfx: 'assets/scare4.mp3' }
   ];
 
-  // Utility: show waiver unless they accepted
+  // Waiver logic
   function showOrHideWaiver() {
     const accepted = localStorage.getItem(WAIVER_KEY) === '1';
     if (accepted) {
-      waiver.classList.remove('shown');
       waiver.style.display = 'none';
-      startJumpscareTimer(); // start engine only after acceptance
+      startJumpscareLoop();
     } else {
       waiver.style.display = 'flex';
     }
@@ -39,20 +40,18 @@
     localStorage.setItem(WAIVER_KEY, '1');
     localStorage.removeItem(SAFE_KEY);
     waiver.style.display = 'none';
-    startJumpscareTimer();
+    startJumpscareLoop();
   });
 
   safeBtn.addEventListener('click', () => {
     localStorage.setItem(WAIVER_KEY, '1');
     localStorage.setItem(SAFE_KEY, '1');
     waiver.style.display = 'none';
-    // Safe mode: do not start jumpscares
   });
 
   leaveBtn.addEventListener('click', () => {
     waiver.style.display = 'none';
-    // Optional redirect if you want to send them away:
-    // window.location.href = 'about:blank';
+    window.location.href = 'about:blank';
   });
 
   // Jumpscare engine
@@ -64,101 +63,74 @@
   }
 
   function isMediaPlaying() {
-    // 1) sessionStorage flag can be set by other pages (listen/watch)
     if (sessionStorage.getItem(PLAY_FLAG) === '1') return true;
-
-    // 2) check for native audio/video
     const medias = [...document.querySelectorAll('audio, video')];
     return medias.some(m => !m.paused && !m.ended && m.currentTime > 0);
+  }
+
+  function startJumpscareLoop() {
+    if (isSafeMode()) return;
+    scheduleNextScare();
   }
 
   function scheduleNextScare() {
     clearTimeout(scareTimeoutId);
     if (isSafeMode()) return;
 
-    // Pick a random time within the next 60 seconds
+    // Random delay: 0–59s
     const ms = Math.floor(Math.random() * 60_000);
     scareTimeoutId = setTimeout(triggerScareIfAble, ms);
 
-    console.log('[BGT] Next scare scheduled in', Math.round(ms/1000), 's');
+    console.log('[BGT] Next scare in', Math.round(ms / 1000), 's');
   }
 
-  function startJumpscareTimer() {
-    if (isSafeMode()) {
-      console.log('[BGT] Safe mode enabled - jumpscares disabled');
-      return;
-    }
-    scheduleNextScare();
-  }
-
-  async function triggerScareIfAble() {
+  function triggerScareIfAble() {
     if (isSafeMode()) return;
     if (isMediaPlaying()) {
-      console.log('[BGT] media playing — deferring scare');
-      scareTimeoutId = setTimeout(triggerScareIfAble, 15_000);
+      // Retry in 10s if media playing
+      scareTimeoutId = setTimeout(triggerScareIfAble, 10_000);
       return;
     }
-
     triggerScare();
-    // schedule next scare after current finishes
-    scheduleNextScare();
   }
 
   function triggerScare() {
     if (scareActive) return;
     scareActive = true;
 
-    // pick random scare
     const pick = SCARES[Math.floor(Math.random() * SCARES.length)];
 
-    overlay.innerHTML = '';
-    const img = document.createElement('img');
-    img.src = pick.img;
-    img.alt = 'scare';
-    img.style.width = '100%';
-    img.style.height = '100%';
-    img.style.objectFit = 'cover';
-    overlay.appendChild(img);
-
-    // play audio
+    overlay.innerHTML = `
+      <img src="${pick.img}" alt="scare" style="width:100%;height:100%;object-fit:cover;" />
+    `;
     const sfx = new Audio(pick.sfx);
-    sfx.preload = 'auto';
-    sfx.volume = 1.0;
-    sfx.play().catch(()=>{});
+    sfx.play().catch(() => {});
 
-    overlay.classList.add('active');
+    overlay.style.display = 'block';
+    overlay.setAttribute('aria-hidden', 'false');
 
-    // keep for 6 seconds
+    // Show for 3s
     setTimeout(() => {
-      overlay.classList.remove('active');
+      overlay.style.display = 'none';
       overlay.innerHTML = '';
+      overlay.setAttribute('aria-hidden', 'true');
       scareActive = false;
-    }, 6000);
-  }
 
-  // Poll to make sure scare timer is always active when it should be
-  setInterval(() => {
-    const accepted = localStorage.getItem(WAIVER_KEY) === '1';
-    if (accepted && !isSafeMode() && !scareTimeoutId) scheduleNextScare();
-  }, 10_000);
+      // Schedule next scare AFTER this one finishes
+      scheduleNextScare();
+    }, 3000);
+  }
 
   // Pause scheduling when tab hidden
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       clearTimeout(scareTimeoutId);
       scareTimeoutId = null;
-    } else {
-      if (!isSafeMode()) scheduleNextScare();
+    } else if (!isSafeMode() && !scareActive) {
+      scheduleNextScare();
     }
   });
 
   // Init
   showOrHideWaiver();
-
-  // Debug helpers
-  window.BGT = {
-    triggerScare,
-    scheduleNextScare,
-    isMediaPlaying
-  };
 })();
