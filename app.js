@@ -22,34 +22,36 @@
   let scareActive = false;
 
   // ---------------- WAIVER ----------------
-function showOrHideWaiver() {
-  const accepted = localStorage.getItem(WAIVER_KEY) === '1';
-  if (accepted) {
+  function showOrHideWaiver() {
+    const accepted = localStorage.getItem(WAIVER_KEY) === '1';
+    console.log('[BGT] Waiver accepted?', accepted);
+    if (accepted) {
+      waiver.style.display = 'none';
+      startJumpscareLoop();
+    } else {
+      waiver.style.display = 'flex';
+    }
+  }
+
+  acceptBtn.addEventListener('click', () => {
+    console.log('[BGT] Accept button clicked');
+    localStorage.setItem(WAIVER_KEY, '1');
+    localStorage.removeItem(SAFE_KEY);
     waiver.style.display = 'none';
     startJumpscareLoop();
-  } else {
-    waiver.style.display = 'flex';
-  }
-}
+  });
 
-acceptBtn.addEventListener('click', () => {
-  localStorage.setItem(WAIVER_KEY, '1');
-  localStorage.removeItem(SAFE_KEY);
-  waiver.style.display = 'none';
-  startJumpscareLoop();
-});
+  safeBtn.addEventListener('click', () => {
+    console.log('[BGT] Safe mode button clicked');
+    localStorage.setItem(WAIVER_KEY, '1');
+    localStorage.setItem(SAFE_KEY, '1');
+    waiver.style.display = 'none';
+  });
 
-safeBtn.addEventListener('click', () => {
-  localStorage.setItem(WAIVER_KEY, '1');
-  localStorage.setItem(SAFE_KEY, '1');
-  waiver.style.display = 'none';
-});
-
-leaveBtn.addEventListener('click', () => {
-  waiver.style.display = 'none';
-  // window.location.href = 'about:blank'; // optional redirect
-});
-
+  leaveBtn.addEventListener('click', () => {
+    console.log('[BGT] Leave button clicked');
+    waiver.style.display = 'none';
+  });
 
   // ---------------- JUMPSCARE ----------------
   function isSafeMode() {
@@ -63,23 +65,38 @@ leaveBtn.addEventListener('click', () => {
   }
 
   function startJumpscareLoop() {
-    if (isSafeMode()) return;
+    if (isSafeMode()) {
+      console.log('[BGT] Safe mode active — not starting jumpscare loop');
+      return;
+    }
+    console.log('[BGT] Starting jumpscare loop');
     scheduleNextScare();
   }
 
   function scheduleNextScare() {
     clearTimeout(scareTimeoutId);
-    if (isSafeMode()) return;
+    if (isSafeMode()) {
+      console.log('[BGT] Safe mode active — skipping scheduleNextScare');
+      return;
+    }
 
-    // Random delay: 0–59s
     const ms = Math.floor(Math.random() * 60_000);
+    console.log(`[BGT] Scheduling next scare in ${Math.round(ms / 1000)}s`);
     scareTimeoutId = setTimeout(triggerScareIfAble, ms);
   }
 
   function triggerScareIfAble() {
-    if (isSafeMode()) return;
-    if (isMediaPlaying() || scareActive) {
-      // Retry in 10s if media playing or scare already active
+    if (isSafeMode()) {
+      console.log('[BGT] Safe mode — skipping triggerScareIfAble');
+      return;
+    }
+    if (isMediaPlaying()) {
+      console.log('[BGT] Media playing — deferring scare by 10s');
+      scareTimeoutId = setTimeout(triggerScareIfAble, 10_000);
+      return;
+    }
+    if (scareActive) {
+      console.log('[BGT] Scare already active — deferring by 10s');
       scareTimeoutId = setTimeout(triggerScareIfAble, 10_000);
       return;
     }
@@ -87,27 +104,29 @@ leaveBtn.addEventListener('click', () => {
   }
 
   function triggerScare() {
-    if (scareActive) return;
+    if (scareActive) {
+      console.log('[BGT] Scare already active — abort triggerScare');
+      return;
+    }
     scareActive = true;
 
     const pick = SCARES[Math.floor(Math.random() * SCARES.length)];
-    overlay.innerHTML = `
-      <img src="${pick.img}" alt="scare" style="width:100%;height:100%;object-fit:cover;" />
-    `;
+    console.log('[BGT] Triggering scare with', pick.img);
+
+    overlay.innerHTML = `<img src="${pick.img}" alt="scare" style="width:100%;height:100%;object-fit:cover;" />`;
     overlay.style.display = 'block';
     overlay.setAttribute('aria-hidden', 'false');
 
     const sfx = new Audio(pick.sfx);
-    sfx.play().catch(() => {});
+    sfx.play().catch(e => console.log('[BGT] Error playing audio:', e));
 
-    // Show for 3s
     setTimeout(() => {
       overlay.style.display = 'none';
       overlay.innerHTML = '';
       overlay.setAttribute('aria-hidden', 'true');
       scareActive = false;
+      console.log('[BGT] Scare ended');
 
-      // Schedule next scare AFTER this one finishes
       scheduleNextScare();
     }, 3000);
   }
@@ -115,9 +134,11 @@ leaveBtn.addEventListener('click', () => {
   // Pause/resume scheduling when tab visibility changes
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      console.log('[BGT] Tab hidden — clearing scare timeout');
       clearTimeout(scareTimeoutId);
       scareTimeoutId = null;
     } else if (!isSafeMode() && !scareActive) {
+      console.log('[BGT] Tab visible — scheduling next scare');
       scheduleNextScare();
     }
   });
