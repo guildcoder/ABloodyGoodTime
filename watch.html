@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Watch — A Bloody Good Time</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* tiny additional styles for cinematic effect */
+    .poster-stage { display:flex; gap:12px; overflow:hidden; padding:20px; justify-content:center; }
+    .poster { width:160px; height:240px; background:#222; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.8); background-size:cover; background-position:center; cursor:pointer; }
+    .theater { display:none; padding:20px; max-width:1000px; margin: 12px auto; }
+    .screen { background:black; height:480px; width:100%; display:flex; align-items:center; justify-content:center; border-radius:10px; overflow:hidden; position:relative;}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="index.html"><img src="assets/logo.png" alt="logo" class="logo"></a>
+  </header>
+
+  <main>
+    <section class="poster-stage" id="posterStage">
+      <!-- Replace background-image urls with your poster assets -->
+      <div class="poster" data-video-id="VIDEO_ID_1" style="background-image:url('assets/poster1.jpg')"></div>
+      <div class="poster" data-video-id="VIDEO_ID_2" style="background-image:url('assets/poster2.jpg')"></div>
+      <div class="poster" data-video-id="VIDEO_ID_3" style="background-image:url('assets/poster3.jpg')"></div>
+    </section>
+
+    <section class="theater" id="theater">
+      <div class="screen" id="screen">
+        <div id="ytplayer"></div>
+      </div>
+      <div style="margin-top:10px;">
+        <button id="leaveTheater" class="btn">Leave theater</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Load YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <script>
+    const PLAY_FLAG = 'bgt_media_playing';
+
+    // Basic poster -> theater animation (simple: hide posters, show theater)
+    const posters = document.querySelectorAll('.poster');
+    const theater = document.getElementById('theater');
+    const posterStage = document.getElementById('posterStage');
+    let selectedVideoId = null;
+    posters.forEach(p => {
+      p.addEventListener('click', () => {
+        selectedVideoId = p.dataset.videoId;
+        // Simple transition: hide posters, show theater
+        posterStage.style.display = 'none';
+        theater.style.display = 'block';
+        // init youtube player
+        loadYouTubePlayer(selectedVideoId);
+      });
+    });
+
+    document.getElementById('leaveTheater').addEventListener('click', () => {
+      // stop youtube player
+      if (window.ytPlayer && window.ytPlayer.stopVideo) window.ytPlayer.stopVideo();
+      sessionStorage.removeItem(PLAY_FLAG);
+      theater.style.display = 'none';
+      posterStage.style.display = 'flex';
+    });
+
+    // YouTube API integration
+    function onYouTubeIframeAPIReady() {
+      // the API will call this when ready — we create players dynamically when needed
+      // kept empty intentionally
+    }
+
+    function loadYouTubePlayer(videoId) {
+      if (!videoId) return;
+      // If a player already exists, destroy it
+      if (window.ytPlayer && window.ytPlayer.destroy) window.ytPlayer.destroy();
+
+      window.ytPlayer = new YT.Player('ytplayer', {
+        height: '480',
+        width: '100%',
+        videoId: videoId,
+        playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0 },
+        events: {
+          'onReady': (e) => {
+            // attempt autoplay
+            e.target.playVideo();
+          },
+          'onStateChange': (event) => {
+            // YT Player states: 1 = playing, 2 = paused, 0 = ended
+            if (event.data === YT.PlayerState.PLAYING) {
+              sessionStorage.setItem(PLAY_FLAG, '1');
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+              sessionStorage.removeItem(PLAY_FLAG);
+            }
+          }
+        }
+      });
+    }
+
+    // expose function expected by YT API
+    window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+  </script>
+</body>
+</html>
