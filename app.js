@@ -22,34 +22,34 @@
   let scareActive = false;
 
   // ---------------- WAIVER ----------------
-  function showOrHideWaiver() {
-    const accepted = localStorage.getItem(WAIVER_KEY) === '1';
-    if (accepted) {
-      waiver.style.display = 'none';
-      startJumpscareLoop();
-    } else {
-      waiver.style.display = 'flex';
-    }
-  }
-
-  acceptBtn.addEventListener('click', () => {
-    localStorage.setItem(WAIVER_KEY, '1');
-    localStorage.removeItem(SAFE_KEY);
+function showOrHideWaiver() {
+  const accepted = localStorage.getItem(WAIVER_KEY) === '1';
+  if (accepted) {
     waiver.style.display = 'none';
     startJumpscareLoop();
-  });
+  } else {
+    waiver.style.display = 'flex';
+  }
+}
 
-  safeBtn.addEventListener('click', () => {
-    localStorage.setItem(WAIVER_KEY, '1');
-    localStorage.setItem(SAFE_KEY, '1');
-    waiver.style.display = 'none';
-  });
+acceptBtn.addEventListener('click', () => {
+  localStorage.setItem(WAIVER_KEY, '1');
+  localStorage.removeItem(SAFE_KEY);
+  waiver.style.display = 'none';
+  startJumpscareLoop();
+});
 
-  leaveBtn.addEventListener('click', () => {
-    waiver.style.display = 'none';
-    // Optional: redirect user
-    // window.location.href = 'about:blank';
-  });
+safeBtn.addEventListener('click', () => {
+  localStorage.setItem(WAIVER_KEY, '1');
+  localStorage.setItem(SAFE_KEY, '1');
+  waiver.style.display = 'none';
+});
+
+leaveBtn.addEventListener('click', () => {
+  waiver.style.display = 'none';
+  // window.location.href = 'about:blank'; // optional redirect
+});
+
 
   // ---------------- JUMPSCARE ----------------
   function isSafeMode() {
