@@ -1,0 +1,54 @@
+/* Basic reset */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html,body { height:100%; background:#040404; color:#eee; font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+
+.logo { display:block; margin: 28px auto 12px; max-width:220px; }
+
+.home-main { max-width:1100px; margin: 0 auto; padding: 18px; text-align:center; }
+
+/* grid of three icons */
+.home-grid { display:flex; gap:24px; justify-content:center; align-items:center; margin: 28px 12px; flex-wrap:wrap; }
+.home-card {
+  width: 150px; height: 150px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-decoration:none; color:#fff; border-radius:16px; background: linear-gradient(180deg, rgba(40,0,0,0.08), rgba(0,0,0,0.4));
+  padding:12px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); transform: translateY(0); transition: transform .18s ease, box-shadow .18s;
+}
+.home-card img { width:72px; height:72px; object-fit:contain; margin-bottom:8px; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.7)); }
+.home-card span { font-weight:700; letter-spacing:0.6px; font-size:0.98rem; }
+
+/* hover */
+.home-card:hover { transform: translateY(-6px); box-shadow: 0 12px 36px rgba(0,0,0,0.9); }
+
+/* About */
+.about { margin-top:22px; padding:18px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); border-radius:12px; max-width:760px; margin-left:auto; margin-right:auto; }
+.about h2 { margin-bottom:10px; color:#ff6b6b; }
+.about p { line-height:1.5; opacity:0.95; }
+
+/* Modal (waiver) */
+.modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(4,4,4,0.7); z-index:9999; padding:18px; }
+.modal .modal-inner { max-width:720px; background:linear-gradient(180deg,#060606,#0f0606); border: 1px solid rgba(255,0,0,0.06); padding:22px; border-radius:14px; text-align:left; box-shadow:0 20px 80px rgba(0,0,0,0.8); color:#eaeaea; }
+.modal h1 { color:#ff4747; font-size:1.45rem; margin-bottom:6px; }
+.modal .lead { margin-bottom:10px; font-size:0.98rem; }
+.modal .entice { font-style:italic; color:#ffc7c7; margin-bottom:8px; }
+.waiver-bullets { margin:8px 0 14px 18px; color:#ccc; }
+.waiver-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+.btn { background:transparent; border:1px solid rgba(255,255,255,0.08); padding:10px 14px; border-radius:8px; cursor:pointer; color:#fff; font-weight:700; }
+.btn-danger { background:linear-gradient(180deg,#8b0000,#5b0000); border: none; color:#fff; }
+.btn-muted { opacity:0.7; }
+
+/* Scare overlay (hidden by default) */
+.scare-overlay {
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  pointer-events:none; z-index:10000; visibility:hidden; opacity:0; transition: opacity .06s linear;
+}
+.scare-overlay.active { visibility:visible; opacity:1; pointer-events:auto; }
+
+/* Scare image style (cover) */
+.scare-overlay img { width:100vw; height:100vh; object-fit:cover; display:block; }
+
+/* Responsive */
+@media (max-width:640px) {
+  .home-card { width: 120px; height:120px; }
+  .logo { max-width:170px; }
+  .modal .modal-inner { margin:12px; padding:16px; }
+}
