@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Listen — A Bloody Good Time</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-listen">
+  <header class="site-header">
+    <a href="index.html"><img src="assets/logo.png" alt="logo" class="logo"></a>
+  </header>
+
+  <main style="padding:18px; max-width:900px; margin:0 auto;">
+    <h1>Listen</h1>
+    <p>Embedded Spotify player (replace with your Spotify episode embed)</p>
+
+    <!-- Spotify embed iframe example (replace 'TRACK_OR_EPISODE_URL' with your embed URL) -->
+    <div id="spotifyWrap" style="margin:18px 0;">
+      <iframe id="spotifyEmbed" src="https://open.spotify.com/embed/episode/YOUR_EPISODE_ID" width="100%" height="232" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+    </div>
+
+    <p>Note: Detecting playback in Spotify's standard embed iframe is limited. If you use the Spotify Web Playback SDK (requires auth and a token), you can more reliably detect playback state and set the session flag so jumpscares pause. Below uses a best-effort heuristic (user interaction with iframe) and a 'Mark as playing' button for debugging.</p>
+
+    <div style="display:flex;gap:10px;">
+      <button id="dbgPlay" class="btn btn-danger">Mark as Playing (debug)</button>
+      <button id="dbgStop" class="btn">Mark as Stopped (debug)</button>
+    </div>
+  </main>
+
+  <script>
+    // Simple heuristic: when user focuses the iframe (clicks it), mark 'playing' for a while.
+    const PLAY_FLAG = 'bgt_media_playing';
+    const iframe = document.getElementById('spotifyEmbed');
+    const dbgPlay = document.getElementById('dbgPlay');
+    const dbgStop = document.getElementById('dbgStop');
+
+    let guessedInterval = null;
+
+    iframe.addEventListener('load', () => {
+      // clicking into the iframe may not bubble; so provide debug controls too.
+      iframe.addEventListener('focus', () => {
+        sessionStorage.setItem(PLAY_FLAG, '1');
+        clearTimeout(guessedInterval);
+        guessedInterval = setTimeout(()=> { sessionStorage.removeItem(PLAY_FLAG); }, 1000*60);
+      }, true);
+    });
+
+    // debug buttons
+    dbgPlay.addEventListener('click', () => {
+      sessionStorage.setItem(PLAY_FLAG, '1');
+      alert('Marked playing — jumpscares paused');
+    });
+    dbgStop.addEventListener('click', () => {
+      sessionStorage.removeItem(PLAY_FLAG);
+      alert('Marked stopped — jumpscares resume');
+    });
+
+    // Best practice note for you:
+    // If you want robust detection, use Spotify Web Playback SDK (requires OAuth token) and
+    // call sessionStorage.setItem('bgt_media_playing','1') when playback starts and remove it on pause.
+  </script>
+</body>
+</html>
