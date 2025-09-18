@@ -1,14 +1,7 @@
-/* app.js
-  - Waiver modal logic (accept/safe/leave)
-  - Jumpscare engine with 4 gifs + 4 sounds
-  - Each scare: random within a minute, 3s full screen, no overlap
-  - Pauses while media is playing
-*/
-
 (() => {
   const WAIVER_KEY = 'bgt_waiver_accepted';
   const SAFE_KEY = 'bgt_safe_mode';
-  const PLAY_FLAG = 'bgt_media_playing'; // sessionStorage flag set by listen/watch pages
+  const PLAY_FLAG = 'bgt_media_playing';
 
   // Elements
   const waiver = document.getElementById('waiver');
@@ -25,7 +18,10 @@
     { img: 'assets/scare4.gif', sfx: 'assets/scare4.mp3' }
   ];
 
-  // Waiver logic
+  let scareTimeoutId = null;
+  let scareActive = false;
+
+  // ---------------- WAIVER ----------------
   function showOrHideWaiver() {
     const accepted = localStorage.getItem(WAIVER_KEY) === '1';
     if (accepted) {
@@ -51,13 +47,11 @@
 
   leaveBtn.addEventListener('click', () => {
     waiver.style.display = 'none';
-    window.location.href = 'about:blank';
+    // Optional: redirect user
+    // window.location.href = 'about:blank';
   });
 
-  // Jumpscare engine
-  let scareTimeoutId = null;
-  let scareActive = false;
-
+  // ---------------- JUMPSCARE ----------------
   function isSafeMode() {
     return localStorage.getItem(SAFE_KEY) === '1';
   }
@@ -80,14 +74,12 @@
     // Random delay: 0–59s
     const ms = Math.floor(Math.random() * 60_000);
     scareTimeoutId = setTimeout(triggerScareIfAble, ms);
-
-    console.log('[BGT] Next scare in', Math.round(ms / 1000), 's');
   }
 
   function triggerScareIfAble() {
     if (isSafeMode()) return;
-    if (isMediaPlaying()) {
-      // Retry in 10s if media playing
+    if (isMediaPlaying() || scareActive) {
+      // Retry in 10s if media playing or scare already active
       scareTimeoutId = setTimeout(triggerScareIfAble, 10_000);
       return;
     }
@@ -99,15 +91,14 @@
     scareActive = true;
 
     const pick = SCARES[Math.floor(Math.random() * SCARES.length)];
-
     overlay.innerHTML = `
       <img src="${pick.img}" alt="scare" style="width:100%;height:100%;object-fit:cover;" />
     `;
-    const sfx = new Audio(pick.sfx);
-    sfx.play().catch(() => {});
-
     overlay.style.display = 'block';
     overlay.setAttribute('aria-hidden', 'false');
+
+    const sfx = new Audio(pick.sfx);
+    sfx.play().catch(() => {});
 
     // Show for 3s
     setTimeout(() => {
@@ -121,7 +112,7 @@
     }, 3000);
   }
 
-  // Pause scheduling when tab hidden
+  // Pause/resume scheduling when tab visibility changes
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       clearTimeout(scareTimeoutId);
@@ -131,6 +122,7 @@
     }
   });
 
-  // Init
+  // ---------------- INIT ----------------
   showOrHideWaiver();
+
 })();
