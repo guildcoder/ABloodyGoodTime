@@ -1,6 +1,6 @@
 {
   "name": "A Bloody Good Time",
-  "short_name": "BGT",
+  "short_name": "ABGT",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#040404",
