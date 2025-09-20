@@ -52,15 +52,14 @@ header span {
 /* Drawer background */
 #drawer {
   position: absolute;
-  top: 0;
+  top: 80px; /* below alphabet */
   left: 50%;
   transform: translateX(-50%);
   width: 320px; /* slightly wider than cassettes */
-  height: 100%;
+  height: calc(100% - 80px); /* stretch to bottom */
   background: url('assets/drawer.png') no-repeat top center;
   background-size: contain;
-  z-index: 0; /* behind cassettes */
-  padding-top: 50px; /* space for logo + alphabet */
+  z-index: 0;
 }
 
 /* Cassette container */
@@ -74,15 +73,15 @@ header span {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 200px; /* space for logo + alphabet + breathing room */
+  padding-top: 200px;
   box-sizing: border-box;
 }
 
 .cassette {
   position: relative;
-  margin-bottom: -220px; /* tighter overlap */
+  margin-bottom: -220px;
   width: 250px;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s ease; /* faster pull-out */
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s ease;
 }
 
 .cassette img {
@@ -104,11 +103,12 @@ header span {
 }
 
 .pulled-out {
-  z-index: 10; /* ensures pulled cassette pops above others */
+  z-index: 10;
 }
 
 .pulled-out img {
-  box-shadow: 0 15px 25px rgba(0,0,0,0.5); /* subtle shadow for depth */
+  box-shadow: 0 15px 25px rgba(0,0,0,0.5);
+  border-radius: 10px;
 }
 
 @media(min-width: 768px){
@@ -177,53 +177,60 @@ function handleQueryResponse(response) {
     container.appendChild(cassetteDiv);
   }
 
-  updatePulledOut();
+  requestAnimationFrame(smoothScroll); // start smooth scrolling
 }
 
-function updatePulledOut() {
+// Smooth scroll variables
+let targetScroll = 0;
+let currentScroll = 0;
+const container = document.getElementById('cassette-container');
+
+container.addEventListener('scroll', () => {
+  targetScroll = container.scrollTop;
+});
+
+// Smooth animation loop
+function smoothScroll() {
+  currentScroll += (targetScroll - currentScroll) * 0.1; // easing factor
+  updatePulledOutSmooth(currentScroll);
+  requestAnimationFrame(smoothScroll);
+}
+
+// Pulled-out cassette logic using smoothed scroll
+function updatePulledOutSmooth(scrollTop) {
   const cassettes = document.querySelectorAll('.cassette');
-  const container = document.getElementById('cassette-container');
-  const scrollTop = container.scrollTop;
   const containerHeight = container.offsetHeight;
+  let pulledIndex = 0;
 
   cassettes.forEach((c, index) => {
+    const baseOffset = index * -220; 
+    const offset = baseOffset + scrollTop * 0.05;
+    c.style.transform = `translateY(${offset}px) scale(1)`;
     c.classList.remove('pulled-out');
-
-    // Vertical-only 3D layering
-    const parallaxOffset = scrollTop * (0.05 + index * 0.01);
-    const scaleOffset = 1 + (index * 0.005);
-    c.style.transform = `translateY(${parallaxOffset}px) scale(${scaleOffset})`;
     c.style.zIndex = index;
   });
 
-  // Determine pulled-out cassette
-  let pulledIndex = 0;
   for (let i = 0; i < cassettes.length; i++) {
-    const transformY = parseFloat(cassettes[i].style.transform.replace('translateY(',''));
-    const topOffset = cassettes[i].offsetTop + (isNaN(transformY) ? 0 : transformY);
-    if (scrollTop + containerHeight / 2 >= topOffset) {
+    const topOffset = cassettes[i].offsetTop - scrollTop;
+    if (topOffset + cassettes[i].offsetHeight / 2 < containerHeight / 2) {
       pulledIndex = i;
     }
   }
 
-  // Last cassette pulled-out at bottom
   if (scrollTop + containerHeight >= container.scrollHeight - 10) {
     pulledIndex = cassettes.length - 1;
   }
 
-  const pulledCassette = cassettes[pulledIndex];
-  pulledCassette.classList.add('pulled-out');
+  const pulled = cassettes[pulledIndex];
+  pulled.classList.add('pulled-out');
+  const pulledOffset = pulledIndex * -220 + scrollTop * 0.05 - 70;
+  pulled.style.transform = `translateY(${pulledOffset}px) scale(1.08)`;
+  pulled.style.zIndex = 10;
 
-  // Pull-out distance and scale with smooth slide-up animation
-  pulledCassette.style.transform += ' scale(1.08) translateY(-70px)';
-
-  // Logo fade effect
   const logo = document.getElementById('site-logo');
   const maxFadeScroll = 150;
   logo.style.opacity = Math.max(0, 1 - scrollTop / maxFadeScroll);
 }
-
-document.getElementById('cassette-container').addEventListener('scroll', updatePulledOut);
 
 // Alphabet bar
 const alphabetBar = document.getElementById('alphabet-bar');
@@ -235,7 +242,8 @@ letters.forEach(letter => {
     const cassettes = document.querySelectorAll('.cassette');
     for (let c of cassettes) {
       if (c.dataset.title.charAt(0).toUpperCase() === letter) {
-        document.getElementById('cassette-container').scrollTo({ top: c.offsetTop - 50, behavior: 'smooth' });
+        container.scrollTo({ top: c.offsetTop - 50, behavior: 'smooth' });
+        targetScroll = c.offsetTop - 50; // update targetScroll for smooth scroll
         break;
       }
     }
