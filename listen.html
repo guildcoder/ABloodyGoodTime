@@ -78,18 +78,25 @@
     });
 
     // Fetch episodes from Google Sheets
-    async function fetchEpisodes(){
-      const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
-      const res=await fetch(url);
-      const data=await res.json();
-      if(!data.values) return [];
-      return data.values.map((row,i)=>({
-        title: row[0]||`Untitled ${i+1}`,
-        number: row[1]||`${i+1}`,
-        spotify: row[2]||"",
-        gif: `/assets/ep${i+1}.gif` // optional placeholder for previews
-      }));
-    }
+   async function fetchEpisodes() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Podcast&range=A:C&tq=select%20A,B,C`;
+
+  const res = await fetch(url);
+  const text = await res.text();
+
+  // Google returns some JS around the JSON, so we extract it
+  const jsonText = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/s)[1];
+  const data = JSON.parse(jsonText);
+
+  if (!data.table || !data.table.rows) return [];
+
+  return data.table.rows.map((row, i) => ({
+    title: row.c[0]?.v || `Untitled ${i + 1}`,
+    number: row.c[1]?.v || `${i + 1}`,
+    spotify: row.c[2]?.v || "",
+    gif: `/assets/ep${i + 1}.gif` // optional placeholder for previews
+  }));
+   }
 
     function escapeHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 
