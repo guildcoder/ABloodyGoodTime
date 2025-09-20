@@ -6,19 +6,20 @@
 <title>Listen - A Bloody Good Time</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  body {
+  html, body {
     margin: 0;
+    height: 100%;
+    overflow: hidden; /* Lock the page scroll */
     font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     background: #040404;
     color: #eee;
-    overflow-x: hidden;
   }
 
   header {
     position: sticky;
     top: 0;
     background: #040404;
-    z-index: 10;
+    z-index: 20;
     display: flex;
     justify-content: center;
     padding: 10px 0;
@@ -32,10 +33,17 @@
   }
 
   #cassette-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: scroll; /* Only cassette container scrolls */
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 20px;
+    padding-top: 20px;
+    box-sizing: border-box;
   }
 
   .cassette {
@@ -53,18 +61,15 @@
 
   .cassette-title {
     position: absolute;
-    top: 150px;
+    top: 80px; /* reduced from 150px */
     width: 100%;
     text-align: center;
     font-weight: bold;
     font-size: 16px;
-    padding-left: 10px;
-    padding-right: 10px;
-    color: #fff;
     pointer-events: none;
+    padding: 0 20px;
   }
 
-  /* Pulled out effect */
   .pulled-out {
     transform: translateY(-50px) scale(1.05);
     z-index: 5;
@@ -72,27 +77,24 @@
 
   @media(min-width: 768px){
     .cassette { width: 300px; }
-    .cassette-title { font-size: 18px; top: 150px; }
+    .cassette-title { font-size: 18px; top: 80px; }
   }
 </style>
 </head>
 <body>
 
-<header id="alphabet-bar">
-  <!-- Alphabet letters will be injected -->
-</header>
+<header id="alphabet-bar"></header>
 
-<div id="cassette-container">
-  <!-- Cassettes generated here -->
-</div>
+<div id="cassette-container"></div>
 
-<!-- Google Visualization -->
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script>
 google.charts.load('current', {'packages':['corechart']});
 google.charts.setOnLoadCallback(drawCassettes);
 
 const sheetURL = 'https://docs.google.com/spreadsheets/d/1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw/gviz/tq?sheet=Podcast&headers=1';
+const images = ['assets/8track.png','assets/8track-red.png','assets/8track-charcoal.png'];
+const colors = ['black', 'red', 'white'];
 
 function drawCassettes() {
   const query = new google.visualization.Query(sheetURL);
@@ -110,7 +112,6 @@ function handleQueryResponse(response) {
 
   for (let i = 0; i < data.getNumberOfRows(); i++) {
     const title = data.getValue(i, 0);
-    const episodeNum = data.getValue(i, 1);
     const spotifyLink = data.getValue(i, 2);
 
     const cassetteDiv = document.createElement('div');
@@ -119,12 +120,13 @@ function handleQueryResponse(response) {
     cassetteDiv.dataset.title = title;
 
     const img = document.createElement('img');
-    img.src = 'assets/8track.png'; // Can rotate 3 images later
+    img.src = images[i % images.length]; // rotate images
     cassetteDiv.appendChild(img);
 
     const titleDiv = document.createElement('div');
     titleDiv.classList.add('cassette-title');
     titleDiv.textContent = title;
+    titleDiv.style.color = colors[Math.floor(Math.random() * colors.length)]; // random color
     cassetteDiv.appendChild(titleDiv);
 
     cassetteDiv.addEventListener('click', () => {
@@ -134,43 +136,37 @@ function handleQueryResponse(response) {
     container.appendChild(cassetteDiv);
   }
 
-  // Initial pull-out for first cassette
   updatePulledOut();
 }
 
+// Pull-out all cassettes sequentially as you scroll
 function updatePulledOut() {
   const cassettes = document.querySelectorAll('.cassette');
-  const scrollTop = window.scrollY;
+  const scrollTop = document.getElementById('cassette-container').scrollTop;
 
-  cassettes.forEach((cassette, index) => {
-    cassette.classList.remove('pulled-out');
-  });
+  cassettes.forEach(c => c.classList.remove('pulled-out'));
 
   for (let i = 0; i < cassettes.length; i++) {
     const topOffset = cassettes[i].offsetTop;
-    if (scrollTop >= topOffset - 200) {
-      if (i < 3) {
-        cassettes[i].classList.add('pulled-out');
-      }
+    if (scrollTop + window.innerHeight/2 >= topOffset) {
+      cassettes[i].classList.add('pulled-out');
     }
   }
 }
 
-// Update on scroll
-window.addEventListener('scroll', updatePulledOut);
+document.getElementById('cassette-container').addEventListener('scroll', updatePulledOut);
 
-// Alphabet bar generation
+// Alphabet bar
 const alphabetBar = document.getElementById('alphabet-bar');
 const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 letters.forEach(letter => {
   const span = document.createElement('span');
   span.textContent = letter;
   span.addEventListener('click', () => {
-    // Scroll to first cassette starting with letter
     const cassettes = document.querySelectorAll('.cassette');
     for (let c of cassettes) {
       if (c.dataset.title.charAt(0).toUpperCase() === letter) {
-        window.scrollTo({ top: c.offsetTop - 50, behavior: 'smooth' });
+        document.getElementById('cassette-container').scrollTo({ top: c.offsetTop - 50, behavior: 'smooth' });
         break;
       }
     }
