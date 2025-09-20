@@ -6,82 +6,104 @@
 <title>Listen - A Bloody Good Time</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  html, body {
-    margin: 0;
-    height: 100%;
-    overflow: hidden; /* Lock the page scroll */
-    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    background: #040404;
-    color: #eee;
-  }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: #040404;
+  color: #eee;
+}
 
-  header {
-    position: sticky;
-    top: 0;
-    background: #040404;
-    z-index: 20;
-    display: flex;
-    justify-content: center;
-    padding: 10px 0;
-    font-size: 18px;
-  }
+/* Sticky site logo */
+#site-logo {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  width: 100%;
+  text-align: center;
+  padding: 20px 0;
+  transition: opacity 0.3s ease;
+}
 
-  header span {
-    margin: 0 6px;
-    cursor: pointer;
-    user-select: none;
-  }
+#site-logo img {
+  max-width: 200px;
+}
 
-  #cassette-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow-y: scroll; /* Only cassette container scrolls */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 20px;
-    box-sizing: border-box;
-  }
+/* Alphabet bar */
+header {
+  position: sticky;
+  top: 0;
+  background: #040404;
+  z-index: 25;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px 5px;
+  font-size: 16px;
+}
 
-  .cassette {
-    position: relative;
-    margin-bottom: -200px; /* overlap effect */
-    width: 250px;
-    transition: transform 0.3s ease, z-index 0.3s ease;
-  }
+header span {
+  margin: 0 6px;
+  cursor: pointer;
+  user-select: none;
+}
 
-  .cassette img {
-    width: 100%;
-    display: block;
-    border-radius: 10px;
-  }
+/* Cassette container */
+#cassette-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200px; /* space for logo + alphabet + breathing room */
+  box-sizing: border-box;
+}
 
-  .cassette-title {
-    position: absolute;
-    top: 80px; /* reduced from 150px */
-    width: 100%;
-    text-align: center;
-    font-weight: bold;
-    font-size: 16px;
-    pointer-events: none;
-    padding: 0 20px;
-  }
+.cassette {
+  position: relative;
+  margin-bottom: -220px; /* tighter overlap */
+  width: 250px;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.3s ease;
+}
 
-  .pulled-out {
-    transform: translateY(-50px) scale(1.05);
-    z-index: 5;
-  }
+.cassette img {
+  width: 100%;
+  display: block;
+  border-radius: 10px;
+}
 
-  @media(min-width: 768px){
-    .cassette { width: 300px; }
-    .cassette-title { font-size: 18px; top: 80px; }
-  }
+.cassette-title {
+  position: absolute;
+  top: 80px;
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  pointer-events: none;
+  padding-left: 20px;
+  padding-right: 30px;
+}
+
+.pulled-out {
+  z-index: 10; /* ensures pulled cassette pops above others */
+}
+
+@media(min-width: 768px){
+  .cassette { width: 300px; }
+  .cassette-title { font-size: 16px; top: 80px; }
+}
 </style>
 </head>
 <body>
+
+<div id="site-logo">
+  <img src="assets/logo.png" alt="A Bloody Good Time Logo">
+</div>
 
 <header id="alphabet-bar"></header>
 
@@ -94,7 +116,7 @@ google.charts.setOnLoadCallback(drawCassettes);
 
 const sheetURL = 'https://docs.google.com/spreadsheets/d/1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw/gviz/tq?sheet=Podcast&headers=1';
 const images = ['assets/8track.png','assets/8track-red.png','assets/8track-charcoal.png'];
-const colors = ['black', 'red', 'white'];
+const colors = ['black', 'white'];
 
 function drawCassettes() {
   const query = new google.visualization.Query(sheetURL);
@@ -109,9 +131,8 @@ function handleQueryResponse(response) {
 
   const data = response.getDataTable();
   const container = document.getElementById('cassette-container');
-const colors = ['black', 'red', 'white'];
 
-for (let i = 0; i < data.getNumberOfRows(); i++) {
+  for (let i = 0; i < data.getNumberOfRows(); i++) {
     const title = data.getValue(i, 0);
     const spotifyLink = data.getValue(i, 2);
 
@@ -121,16 +142,13 @@ for (let i = 0; i < data.getNumberOfRows(); i++) {
     cassetteDiv.dataset.title = title;
 
     const img = document.createElement('img');
-    img.src = images[i % images.length]; // rotate images
+    img.src = images[i % images.length];
     cassetteDiv.appendChild(img);
 
     const titleDiv = document.createElement('div');
     titleDiv.classList.add('cassette-title');
     titleDiv.textContent = title;
-
-    // Assign a consistent color per cassette using index
     titleDiv.style.color = colors[i % colors.length];
-
     cassetteDiv.appendChild(titleDiv);
 
     cassetteDiv.addEventListener('click', () => {
@@ -143,19 +161,47 @@ for (let i = 0; i < data.getNumberOfRows(); i++) {
   updatePulledOut();
 }
 
-// Pull-out all cassettes sequentially as you scroll
 function updatePulledOut() {
   const cassettes = document.querySelectorAll('.cassette');
-  const scrollTop = document.getElementById('cassette-container').scrollTop;
+  const container = document.getElementById('cassette-container');
+  const scrollTop = container.scrollTop;
+  const containerHeight = container.offsetHeight;
 
-  cassettes.forEach(c => c.classList.remove('pulled-out'));
+  cassettes.forEach((c, index) => {
+    c.classList.remove('pulled-out');
 
+    // Vertical-only 3D layering
+    const parallaxOffset = scrollTop * (0.05 + index * 0.01);
+    const scaleOffset = 1 + (index * 0.005);
+    c.style.transform = `translateY(${parallaxOffset}px) scale(${scaleOffset})`;
+    c.style.zIndex = index;
+  });
+
+  // Determine pulled-out cassette
+  let pulledIndex = 0;
   for (let i = 0; i < cassettes.length; i++) {
-    const topOffset = cassettes[i].offsetTop;
-    if (scrollTop + window.innerHeight/2 >= topOffset) {
-      cassettes[i].classList.add('pulled-out');
+    const transformY = parseFloat(cassettes[i].style.transform.replace('translateY(',''));
+    const topOffset = cassettes[i].offsetTop + (isNaN(transformY) ? 0 : transformY);
+    if (scrollTop + containerHeight / 2 >= topOffset) {
+      pulledIndex = i;
     }
   }
+
+  // Last cassette pulled-out at bottom
+  if (scrollTop + containerHeight >= container.scrollHeight - 10) {
+    pulledIndex = cassettes.length - 1;
+  }
+
+  const pulledCassette = cassettes[pulledIndex];
+  pulledCassette.classList.add('pulled-out');
+
+  // Pull-out distance and scale with smooth slide-up animation
+  pulledCassette.style.transform += ' scale(1.08) translateY(-70px)';
+
+  // Logo fade effect
+  const logo = document.getElementById('site-logo');
+  const maxFadeScroll = 150;
+  logo.style.opacity = Math.max(0, 1 - scrollTop / maxFadeScroll);
 }
 
 document.getElementById('cassette-container').addEventListener('scroll', updatePulledOut);
