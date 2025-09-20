@@ -1,217 +1,155 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Listen — 8-Track Drawer</title>
-  <style>
-    :root{
-      --bg:#050507;
-      --panel:#0d0d10;
-      --accent:#d94f4f;
-      --width-mobile:360px;
-      --width-desktop:520px;
-    }
+<script>
+  const SHEET_ID = "1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw";
+  const drawer = document.getElementById('drawer');
+  const alphaBar = document.getElementById('alphaBar');
 
-    html,body{height:100%;background:var(--bg);color:#eee;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:0}
-    .container{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 12px;}
+  // Build alphabet bar
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(letter => {
+    const btn = document.createElement('button');
+    btn.textContent = letter;
+    btn.dataset.letter = letter;
+    btn.addEventListener('click', () => jumpToLetter(letter));
+    alphaBar.appendChild(btn);
+  });
 
-    .alpha-bar{position:sticky;top:8px;z-index:40;background:linear-gradient(180deg, rgba(5,5,6,0.9), rgba(5,5,6,0.6));backdrop-filter:blur(6px);padding:8px;border-radius:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:980px;margin-bottom:18px}
-    .alpha-bar button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:6px;color:#ddd;cursor:pointer;font-size:13px}
-    .alpha-bar button.active{border-color:var(--accent);color:var(--accent)}
+  // Fetch episodes using Google Visualization Query
+  async function fetchEpisodes() {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Podcast&range=A:C&tq=select%20A,B,C`;
+    const res = await fetch(url);
+    const text = await res.text();
 
-    .stage{width:100%;max-width:calc(var(--width-desktop));display:flex;justify-content:center}
-    .drawer{width:100%;max-width:var(--width-mobile);position:relative;padding:36px 0 120px;}
+    // Extract JSON from Google’s wrapper
+    const jsonText = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/s)[1];
+    const data = JSON.parse(jsonText);
 
-    .tape{width:100%;height:140px;margin:-60px 0 0;display:block;position:relative;cursor:pointer;transition:transform 350ms cubic-bezier(.2,.9,.2,1),opacity 250ms,filter 250ms;}
-    .tape:first-child{margin-top:0}
+    if (!data.table || !data.table.rows) return [];
 
-    .tape .card{width:100%;height:100%;position:relative;display:block}
-    .tape img.8track{width:100%;height:100%;object-fit:contain;display:block;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,0.8);}
+    return data.table.rows.map((row, i) => ({
+      title: row.c[0]?.v || `Untitled ${i + 1}`,
+      number: row.c[1]?.v || `${i + 1}`,
+      spotify: row.c[2]?.v || "",
+      gif: `/assets/ep${i + 1}.gif`
+    }));
+  }
 
-    .label{position:absolute;left:12%;top:36%;transform:translateY(-50%);width:76%;padding:0 8px;pointer-events:none}
-    .title{font-weight:700;font-size:15px;line-height:1.05;color:#111;background:rgba(255,255,255,0.94);padding:6px 8px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .meta{font-size:12px;color:rgba(17,17,17,0.7);margin-top:4px}
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
 
-    .tape.focused{transform:translateY(-22px) scale(1.03);filter:brightness(1.02);z-index:50}
-    .tape.near{transform:translateY(-10px) scale(1.01);z-index:40}
-    .tape:first-of-type{z-index:60}
+  function renderEpisodes(episodes) {
+    drawer.innerHTML = "";
+    episodes.forEach((ep, idx) => {
+      const tape = document.createElement('div');
+      tape.className = 'tape';
+      tape.dataset.index = idx;
+      tape.dataset.title = ep.title;
+      tape.dataset.gif = ep.gif;
+      tape.dataset.spotify = ep.spotify;
+      tape.dataset.letter = ep.title.trim().charAt(0).toUpperCase();
 
-    .media-replace{position:absolute;inset:0;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000}
-    .media-replace img{width:100%;height:100%;object-fit:cover}
-
-    .player-wrap{margin-top:14px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
-    .player-wrap iframe{width:100%;height:166px;border-radius:6px;border:0}
-
-    @media (min-width:1000px){
-      .drawer{max-width:var(--width-desktop)}
-      .tape{height:180px}
-      .label{top:42%;left:12%;width:76%}
-      .title{font-size:16px}
-    }
-
-    .focus-marker{position:fixed;left:50%;transform:translateX(-50%);top:34vh;height:0;pointer-events:none}
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="alpha-bar" id="alphaBar" aria-label="Alphabet lookup" role="toolbar"></div>
-    <div class="stage"><div class="drawer" id="drawer"></div></div>
-    <div class="focus-marker" aria-hidden="true"></div>
-  </div>
-
-  <script>
-    const SHEET_ID = "1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw";
-    const RANGE = "Podcast!A:C";
-    const API_KEY = "YOUR_API_KEY"; // replace with real API key
-
-    const drawer = document.getElementById('drawer');
-    const alphaBar = document.getElementById('alphaBar');
-
-    // Build alphabet bar
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(letter=>{
-      const btn=document.createElement('button');
-      btn.textContent=letter;
-      btn.dataset.letter=letter;
-      btn.addEventListener('click',()=>jumpToLetter(letter));
-      alphaBar.appendChild(btn);
-    });
-
-    // Fetch episodes from Google Sheets
-   async function fetchEpisodes() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Podcast&range=A:C&tq=select%20A,B,C`;
-
-  const res = await fetch(url);
-  const text = await res.text();
-
-  // Google returns some JS around the JSON, so we extract it
-  const jsonText = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/s)[1];
-  const data = JSON.parse(jsonText);
-
-  if (!data.table || !data.table.rows) return [];
-
-  return data.table.rows.map((row, i) => ({
-    title: row.c[0]?.v || `Untitled ${i + 1}`,
-    number: row.c[1]?.v || `${i + 1}`,
-    spotify: row.c[2]?.v || "",
-    gif: `/assets/ep${i + 1}.gif` // optional placeholder for previews
-  }));
-   }
-
-    function escapeHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-
-    function renderEpisodes(episodes){
-      drawer.innerHTML="";
-      episodes.forEach((ep,idx)=>{
-        const tape=document.createElement('div');
-        tape.className='tape';
-        tape.dataset.index=idx;
-        tape.dataset.title=ep.title;
-        tape.dataset.gif=ep.gif;
-        tape.dataset.spotify=ep.spotify;
-        tape.dataset.letter=ep.title.trim().charAt(0).toUpperCase();
-
-        tape.innerHTML=`
-          <div class="card">
-            <img class="8track" src="assets/8track.png" alt="8track with label for ${escapeHtml(ep.title)}">
-            <div class="label">
-              <div class="title">${escapeHtml(ep.title)}</div>
-              <div class="meta">Episode ${escapeHtml(ep.number)}</div>
-            </div>
+      tape.innerHTML = `
+        <div class="card">
+          <img class="8track" src="assets/8track.png" alt="8track with label for ${escapeHtml(ep.title)}">
+          <div class="label">
+            <div class="title">${escapeHtml(ep.title)}</div>
+            <div class="meta">Episode ${escapeHtml(ep.number)}</div>
           </div>
-        `;
-
-        tape.addEventListener('click',()=>playThenEmbed(tape));
-        drawer.appendChild(tape);
-      });
-      observeFocus();
-    }
-
-    function jumpToLetter(letter){
-      [...alphaBar.children].forEach(b=>b.classList.toggle('active',b.dataset.letter===letter));
-      const first=[...drawer.children].find(n=>n.dataset.letter===letter);
-      if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
-    }
-
-    // Focus tracking
-    let currentFocused=null;
-    function observeFocus(){
-      const options={root:null,rootMargin:`-34vh 0 -66vh 0`,threshold:0.5};
-      const observer=new IntersectionObserver(entries=>{
-        entries.forEach(entry=>{
-          if(entry.isIntersecting){setFocus(parseInt(entry.target.dataset.index,10));}
-        });
-      },options);
-      [...drawer.children].forEach(n=>observer.observe(n));
-    }
-
-    function setFocus(index){
-      if(currentFocused===index) return;
-      currentFocused=index;
-      const nodes=[...drawer.children];
-      nodes.forEach((n,i)=>{
-        n.classList.remove('focused','near');
-        if(i===index) n.classList.add('focused');
-        if(i===index-1) n.classList.add('near');
-        if(index<3 && i<index && i>=index-2) n.classList.add('near');
-      });
-    }
-
-    // Gif then Spotify embed
-    function playThenEmbed(tape){
-      if(tape.dataset.playing==='1') return;
-      tape.dataset.playing='1';
-
-      const gif=tape.dataset.gif;
-      const spotify=tape.dataset.spotify;
-      const card=tape.querySelector('.card');
-
-      const replace=document.createElement('div');
-      replace.className='media-replace';
-      replace.innerHTML=`<img src="${gif}" alt="${escapeHtml(tape.dataset.title)} preview">`;
-
-      const close=document.createElement('button');
-      close.textContent='✕';
-      close.style.cssText='position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.4);border:0;color:#fff;padding:6px;border-radius:6px;cursor:pointer;';
-      replace.appendChild(close);
-
-      card.appendChild(replace);
-
-      const cleanup=()=>{
-        replace.remove();
-        const wrap=document.createElement('div');wrap.className='player-wrap';
-        const iframe=document.createElement('iframe');
-        iframe.src=spotify;
-        iframe.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
-        wrap.appendChild(iframe);
-        card.appendChild(wrap);
-
-        const removeBtn=document.createElement('button');
-        removeBtn.textContent='Close';
-        removeBtn.style.cssText='margin-top:8px;padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.06);color:#fff;cursor:pointer;';
-        removeBtn.addEventListener('click',()=>{wrap.remove();tape.dataset.playing='0';});
-        card.appendChild(removeBtn);
-      };
-
-      const timer=setTimeout(cleanup,8000);
-      close.addEventListener('click',()=>{clearTimeout(timer);cleanup();});
-      document.addEventListener('keydown',e=>{if(e.key==='Escape'){clearTimeout(timer);cleanup();}}, {once:true});
-    }
-
-    // Keyboard nav
-    document.addEventListener('keydown',e=>{
-      if(e.key==='ArrowDown'){e.preventDefault();navigate(1);}
-      if(e.key==='ArrowUp'){e.preventDefault();navigate(-1);}
+        </div>
+      `;
+      tape.addEventListener('click', () => playThenEmbed(tape));
+      drawer.appendChild(tape);
     });
-    function navigate(dir){
-      const nodes=[...drawer.children];
-      let target=Math.max(0,Math.min(nodes.length-1,(currentFocused??0)+dir));
-      nodes[target].scrollIntoView({behavior:'smooth',block:'center'});
-    }
+    observeFocus();
+  }
 
-    // Init
-    fetchEpisodes().then(renderEpisodes);
-    setTimeout(()=>setFocus(0),120);
-  </script>
-</body>
-</html>
+  function jumpToLetter(letter) {
+    [...alphaBar.children].forEach(b => b.classList.toggle('active', b.dataset.letter === letter));
+    const first = [...drawer.children].find(n => n.dataset.letter === letter);
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Focus tracking
+  let currentFocused = null;
+  function observeFocus() {
+    const options = { root: null, rootMargin: '-34vh 0 -66vh 0', threshold: 0.5 };
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) setFocus(parseInt(entry.target.dataset.index, 10));
+      });
+    }, options);
+    [...drawer.children].forEach(n => observer.observe(n));
+  }
+
+  function setFocus(index) {
+    if (currentFocused === index) return;
+    currentFocused = index;
+    const nodes = [...drawer.children];
+    nodes.forEach((n, i) => {
+      n.classList.remove('focused', 'near');
+      if (i === index) n.classList.add('focused');
+      if (i === index - 1) n.classList.add('near');
+      if (index < 3 && i < index && i >= index - 2) n.classList.add('near');
+    });
+  }
+
+  // Gif then Spotify embed
+  function playThenEmbed(tape) {
+    if (tape.dataset.playing === '1') return;
+    tape.dataset.playing = '1';
+
+    const gif = tape.dataset.gif;
+    const spotify = tape.dataset.spotify;
+    const card = tape.querySelector('.card');
+
+    const replace = document.createElement('div');
+    replace.className = 'media-replace';
+    replace.innerHTML = `<img src="${gif}" alt="${escapeHtml(tape.dataset.title)} preview">`;
+
+    const close = document.createElement('button');
+    close.textContent = '✕';
+    close.style.cssText = 'position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.4);border:0;color:#fff;padding:6px;border-radius:6px;cursor:pointer;';
+    replace.appendChild(close);
+    card.appendChild(replace);
+
+    const cleanup = () => {
+      replace.remove();
+      const wrap = document.createElement('div');
+      wrap.className = 'player-wrap';
+      const iframe = document.createElement('iframe');
+      iframe.src = spotify;
+      iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+      wrap.appendChild(iframe);
+      card.appendChild(wrap);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = 'Close';
+      removeBtn.style.cssText = 'margin-top:8px;padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.06);color:#fff;cursor:pointer;';
+      removeBtn.addEventListener('click', () => { wrap.remove(); tape.dataset.playing = '0'; });
+      card.appendChild(removeBtn);
+    };
+
+    const timer = setTimeout(cleanup, 8000);
+    close.addEventListener('click', () => { clearTimeout(timer); cleanup(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { clearTimeout(timer); cleanup(); } }, { once: true });
+  }
+
+  // Keyboard nav
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); navigate(1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); navigate(-1); }
+  });
+
+  function navigate(dir) {
+    const nodes = [...drawer.children];
+    const target = Math.max(0, Math.min(nodes.length - 1, (currentFocused ?? 0) + dir));
+    nodes[target].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Init
+  fetchEpisodes().then(renderEpisodes);
+  setTimeout(() => setFocus(0), 120);
+</script>
