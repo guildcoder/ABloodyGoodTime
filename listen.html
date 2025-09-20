@@ -1,155 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listen - A Bloody Good Time</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: #040404;
+    color: #eee;
+    overflow-x: hidden;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    background: #040404;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    padding: 10px 0;
+    font-size: 18px;
+  }
+
+  header span {
+    margin: 0 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  #cassette-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .cassette {
+    position: relative;
+    margin-bottom: -200px; /* overlap effect */
+    width: 250px;
+    transition: transform 0.3s ease, z-index 0.3s ease;
+  }
+
+  .cassette img {
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+  }
+
+  .cassette-title {
+    position: absolute;
+    top: 150px;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: #fff;
+    pointer-events: none;
+  }
+
+  /* Pulled out effect */
+  .pulled-out {
+    transform: translateY(-50px) scale(1.05);
+    z-index: 5;
+  }
+
+  @media(min-width: 768px){
+    .cassette { width: 300px; }
+    .cassette-title { font-size: 18px; top: 150px; }
+  }
+</style>
+</head>
+<body>
+
+<header id="alphabet-bar">
+  <!-- Alphabet letters will be injected -->
+</header>
+
+<div id="cassette-container">
+  <!-- Cassettes generated here -->
+</div>
+
+<!-- Google Visualization -->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script>
-  const SHEET_ID = "1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw";
-  const drawer = document.getElementById('drawer');
-  const alphaBar = document.getElementById('alphaBar');
+google.charts.load('current', {'packages':['corechart']});
+google.charts.setOnLoadCallback(drawCassettes);
 
-  // Build alphabet bar
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(letter => {
-    const btn = document.createElement('button');
-    btn.textContent = letter;
-    btn.dataset.letter = letter;
-    btn.addEventListener('click', () => jumpToLetter(letter));
-    alphaBar.appendChild(btn);
+const sheetURL = 'https://docs.google.com/spreadsheets/d/1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw/gviz/tq?sheet=Podcast&headers=1';
+
+function drawCassettes() {
+  const query = new google.visualization.Query(sheetURL);
+  query.send(handleQueryResponse);
+}
+
+function handleQueryResponse(response) {
+  if (response.isError()) {
+    console.error('Error fetching data: ' + response.getMessage());
+    return;
+  }
+
+  const data = response.getDataTable();
+  const container = document.getElementById('cassette-container');
+
+  for (let i = 0; i < data.getNumberOfRows(); i++) {
+    const title = data.getValue(i, 0);
+    const episodeNum = data.getValue(i, 1);
+    const spotifyLink = data.getValue(i, 2);
+
+    const cassetteDiv = document.createElement('div');
+    cassetteDiv.classList.add('cassette');
+    cassetteDiv.dataset.spotify = spotifyLink;
+    cassetteDiv.dataset.title = title;
+
+    const img = document.createElement('img');
+    img.src = 'assets/8track.png'; // Can rotate 3 images later
+    cassetteDiv.appendChild(img);
+
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('cassette-title');
+    titleDiv.textContent = title;
+    cassetteDiv.appendChild(titleDiv);
+
+    cassetteDiv.addEventListener('click', () => {
+      window.open(spotifyLink, '_blank');
+    });
+
+    container.appendChild(cassetteDiv);
+  }
+
+  // Initial pull-out for first cassette
+  updatePulledOut();
+}
+
+function updatePulledOut() {
+  const cassettes = document.querySelectorAll('.cassette');
+  const scrollTop = window.scrollY;
+
+  cassettes.forEach((cassette, index) => {
+    cassette.classList.remove('pulled-out');
   });
 
-  // Fetch episodes using Google Visualization Query
-  async function fetchEpisodes() {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=Podcast&range=A:C&tq=select%20A,B,C`;
-    const res = await fetch(url);
-    const text = await res.text();
-
-    // Extract JSON from Google’s wrapper
-    const jsonText = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/s)[1];
-    const data = JSON.parse(jsonText);
-
-    if (!data.table || !data.table.rows) return [];
-
-    return data.table.rows.map((row, i) => ({
-      title: row.c[0]?.v || `Untitled ${i + 1}`,
-      number: row.c[1]?.v || `${i + 1}`,
-      spotify: row.c[2]?.v || "",
-      gif: `/assets/ep${i + 1}.gif`
-    }));
+  for (let i = 0; i < cassettes.length; i++) {
+    const topOffset = cassettes[i].offsetTop;
+    if (scrollTop >= topOffset - 200) {
+      if (i < 3) {
+        cassettes[i].classList.add('pulled-out');
+      }
+    }
   }
+}
 
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
+// Update on scroll
+window.addEventListener('scroll', updatePulledOut);
 
-  function renderEpisodes(episodes) {
-    drawer.innerHTML = "";
-    episodes.forEach((ep, idx) => {
-      const tape = document.createElement('div');
-      tape.className = 'tape';
-      tape.dataset.index = idx;
-      tape.dataset.title = ep.title;
-      tape.dataset.gif = ep.gif;
-      tape.dataset.spotify = ep.spotify;
-      tape.dataset.letter = ep.title.trim().charAt(0).toUpperCase();
-
-      tape.innerHTML = `
-        <div class="card">
-          <img class="8track" src="assets/8track.png" alt="8track with label for ${escapeHtml(ep.title)}">
-          <div class="label">
-            <div class="title">${escapeHtml(ep.title)}</div>
-            <div class="meta">Episode ${escapeHtml(ep.number)}</div>
-          </div>
-        </div>
-      `;
-      tape.addEventListener('click', () => playThenEmbed(tape));
-      drawer.appendChild(tape);
-    });
-    observeFocus();
-  }
-
-  function jumpToLetter(letter) {
-    [...alphaBar.children].forEach(b => b.classList.toggle('active', b.dataset.letter === letter));
-    const first = [...drawer.children].find(n => n.dataset.letter === letter);
-    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  // Focus tracking
-  let currentFocused = null;
-  function observeFocus() {
-    const options = { root: null, rootMargin: '-34vh 0 -66vh 0', threshold: 0.5 };
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) setFocus(parseInt(entry.target.dataset.index, 10));
-      });
-    }, options);
-    [...drawer.children].forEach(n => observer.observe(n));
-  }
-
-  function setFocus(index) {
-    if (currentFocused === index) return;
-    currentFocused = index;
-    const nodes = [...drawer.children];
-    nodes.forEach((n, i) => {
-      n.classList.remove('focused', 'near');
-      if (i === index) n.classList.add('focused');
-      if (i === index - 1) n.classList.add('near');
-      if (index < 3 && i < index && i >= index - 2) n.classList.add('near');
-    });
-  }
-
-  // Gif then Spotify embed
-  function playThenEmbed(tape) {
-    if (tape.dataset.playing === '1') return;
-    tape.dataset.playing = '1';
-
-    const gif = tape.dataset.gif;
-    const spotify = tape.dataset.spotify;
-    const card = tape.querySelector('.card');
-
-    const replace = document.createElement('div');
-    replace.className = 'media-replace';
-    replace.innerHTML = `<img src="${gif}" alt="${escapeHtml(tape.dataset.title)} preview">`;
-
-    const close = document.createElement('button');
-    close.textContent = '✕';
-    close.style.cssText = 'position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.4);border:0;color:#fff;padding:6px;border-radius:6px;cursor:pointer;';
-    replace.appendChild(close);
-    card.appendChild(replace);
-
-    const cleanup = () => {
-      replace.remove();
-      const wrap = document.createElement('div');
-      wrap.className = 'player-wrap';
-      const iframe = document.createElement('iframe');
-      iframe.src = spotify;
-      iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
-      wrap.appendChild(iframe);
-      card.appendChild(wrap);
-
-      const removeBtn = document.createElement('button');
-      removeBtn.textContent = 'Close';
-      removeBtn.style.cssText = 'margin-top:8px;padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.06);color:#fff;cursor:pointer;';
-      removeBtn.addEventListener('click', () => { wrap.remove(); tape.dataset.playing = '0'; });
-      card.appendChild(removeBtn);
-    };
-
-    const timer = setTimeout(cleanup, 8000);
-    close.addEventListener('click', () => { clearTimeout(timer); cleanup(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { clearTimeout(timer); cleanup(); } }, { once: true });
-  }
-
-  // Keyboard nav
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); navigate(1); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); navigate(-1); }
+// Alphabet bar generation
+const alphabetBar = document.getElementById('alphabet-bar');
+const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+letters.forEach(letter => {
+  const span = document.createElement('span');
+  span.textContent = letter;
+  span.addEventListener('click', () => {
+    // Scroll to first cassette starting with letter
+    const cassettes = document.querySelectorAll('.cassette');
+    for (let c of cassettes) {
+      if (c.dataset.title.charAt(0).toUpperCase() === letter) {
+        window.scrollTo({ top: c.offsetTop - 50, behavior: 'smooth' });
+        break;
+      }
+    }
   });
-
-  function navigate(dir) {
-    const nodes = [...drawer.children];
-    const target = Math.max(0, Math.min(nodes.length - 1, (currentFocused ?? 0) + dir));
-    nodes[target].scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  // Init
-  fetchEpisodes().then(renderEpisodes);
-  setTimeout(() => setFocus(0), 120);
+  alphabetBar.appendChild(span);
+});
 </script>
+
+</body>
+</html>
