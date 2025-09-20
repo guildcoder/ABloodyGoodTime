@@ -1,89 +1,246 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>A Bloody Good Time — Home</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listen - A Bloody Good Time</title>
+<link rel="stylesheet" href="style.css">
+<style>
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: #040404;
+  color: #eee;
+}
 
-  <!-- Web App manifest & iOS app-like meta -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="BGT">
-  <link rel="apple-touch-icon" href="assets/app-icon-192.png">
-  <meta name="theme-color" content="#0b0b0b">
+/* Sticky site logo */
+#site-logo {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  width: 100%;
+  text-align: center;
+  padding: 20px 0;
+  transition: opacity 0.3s ease;
+}
 
-  <link rel="stylesheet" href="styles.css" />
+#site-logo img {
+  max-width: 200px;
+}
+
+/* Alphabet bar */
+header {
+  position: sticky;
+  top: 0;
+  background: #040404;
+  z-index: 25;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px 5px;
+  font-size: 16px;
+}
+
+header span {
+  margin: 0 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Drawer background */
+#drawer {
+  position: absolute;
+  top: 80px; /* below alphabet */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px; /* slightly wider than cassettes */
+  height: calc(100% - 80px); /* stretch to bottom */
+  background: url('assets/drawer.png') no-repeat top center;
+  background-size: contain;
+  z-index: 0;
+}
+
+/* Cassette container */
+#cassette-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200px; /* space for logo + alphabet + breathing room */
+  box-sizing: border-box;
+}
+
+.cassette {
+  position: relative;
+  margin-bottom: -220px;
+  width: 250px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s ease; /* faster, smooth */
+}
+
+.cassette img {
+  width: 100%;
+  display: block;
+  border-radius: 10px;
+}
+
+.cassette-title {
+  position: absolute;
+  top: 80px;
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  pointer-events: none;
+  padding-left: 20px;
+  padding-right: 30px;
+}
+
+.pulled-out {
+  z-index: 10;
+}
+
+.pulled-out img {
+  box-shadow: 0 15px 25px rgba(0,0,0,0.5);
+  border-radius: 10px;
+}
+
+@media(min-width: 768px){
+  .cassette { width: 300px; }
+  .cassette-title { font-size: 16px; top: 80px; }
+}
+</style>
 </head>
-<body class="page-home">
-  <!-- Waiver modal (shows on first load until user accepts or opts out) -->
-  <div id="waiver" class="modal shown" role="dialog" aria-modal="true" aria-labelledby="waiverTitle">
-    <div class="modal-inner">
-      <h1 id="waiverTitle">A Bloody Good Warning</h1>
-      <p class="lead">
-        This site contains sudden, startling audiovisual moments — we call them “jumps.” They’re ruthless.
-        If loud or sudden images/sounds can affect you (epilepsy, heart conditions, anxiety disorders, PTSD, etc.), seriously consider leaving or toggling the safe mode below.
-      </p>
+<body>
 
-      <p class="entice">
-        For everyone else: this is what makes the show fun. Dare to proceed and you might be rewarded
-        with spine-tingling thrills. Dare not — that’s fine too.
-      </p>
+<div id="site-logo">
+  <img src="assets/logo.png" alt="A Bloody Good Time Logo">
+</div>
 
-      <ul class="waiver-bullets">
-        <li>Jumpscares may occur randomly between 1.5 and 3 minutes.</li>
-        <li>They are fullscreen GIF flashes + sound.</li>
-        <li>Playing audio/video anywhere on the site pauses all jumpscares while playing.</li>
-      </ul>
+<header id="alphabet-bar"></header>
 
-      <div class="waiver-actions">
-        <button id="acceptBtn" class="btn btn-danger">I accept the ritual — show me fear</button>
-        <button id="safeBtn" class="btn">Enable Safe Mode (no jumpscares)</button>
-        <button id="leaveBtn" class="btn btn-muted">Nah, I’ll come back later</button>
-      </div>
+<div id="drawer"></div>
+<div id="cassette-container"></div>
 
-      <div class="waiver-footnote">
-        By accepting you acknowledge an awareness of possible physical or psychological reactions and proceed at your own risk.
-      </div>
-    </div>
-  </div>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script>
+google.charts.load('current', {'packages':['corechart']});
+google.charts.setOnLoadCallback(drawCassettes);
 
-  <!-- Main content -->
-  <header class="site-header">
-    <img src="assets/logo.png" alt="A Bloody Good Time logo" class="logo">
-  </header>
+const sheetURL = 'https://docs.google.com/spreadsheets/d/1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw/gviz/tq?sheet=Podcast&headers=1';
+const images = ['assets/8track.png','assets/8track-red.png','assets/8track-charcoal.png'];
+const colors = ['black', 'white'];
 
-  <main class="home-main">
-    <nav class="home-grid" role="navigation" aria-label="Main navigation">
-      <a class="home-card" href="listen.html" id="link-listen">
-        <img src="assets/icon-listen.png" alt="Listen icon">
-        <span>Listen</span>
-      </a>
+function drawCassettes() {
+  const query = new google.visualization.Query(sheetURL);
+  query.send(handleQueryResponse);
+}
 
-      <a class="home-card" href="watch.html" id="link-watch">
-        <img src="assets/icon-watch.png" alt="Watch icon">
-        <span>Watch</span>
-      </a>
+function handleQueryResponse(response) {
+  if (response.isError()) {
+    console.error('Error fetching data: ' + response.getMessage());
+    return;
+  }
 
-      <a class="home-card" href="https://abloodygoodtime.printful.me/" id="link-shop" target="_blank" rel="noopener">
-        <img src="assets/icon-shop.png" alt="Shop icon">
-        <span>Shop</span>
-      </a>
-    </nav>
+  const data = response.getDataTable();
+  const container = document.getElementById('cassette-container');
 
-    <section class="about">
-      <h2>About the podcast</h2>
-      <p id="pod-blurb">
-        A Bloody Good Time is a horror film review podcast — we celebrate the thrills, the blood, the
-        one-liners, and yes, the jump scares. New episodes weekly.
-      </p>
-    </section>
-  </main>
+  for (let i = 0; i < data.getNumberOfRows(); i++) {
+    const title = data.getValue(i, 0);
+    const spotifyLink = data.getValue(i, 2);
 
-  <!-- Jumpscare overlay container (hidden; will be used by app.js) -->
-  <div id="scare-overlay" class="scare-overlay" aria-hidden="true"></div>
+    const cassetteDiv = document.createElement('div');
+    cassetteDiv.classList.add('cassette');
+    cassetteDiv.dataset.spotify = spotifyLink;
+    cassetteDiv.dataset.title = title;
 
-  <script src="app.js" defer></script>
+    const img = document.createElement('img');
+    img.src = images[i % images.length];
+    cassetteDiv.appendChild(img);
 
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('cassette-title');
+    titleDiv.textContent = title;
+    titleDiv.style.color = colors[i % colors.length];
+    cassetteDiv.appendChild(titleDiv);
+
+    cassetteDiv.addEventListener('click', () => {
+      window.open(spotifyLink, '_blank');
+    });
+
+    container.appendChild(cassetteDiv);
+  }
+
+  updatePulledOut();
+}
+
+function updatePulledOut() {
+  const cassettes = document.querySelectorAll('.cassette');
+  const container = document.getElementById('cassette-container');
+  const scrollTop = container.scrollTop;
+  const containerHeight = container.offsetHeight;
+
+  let pulledIndex = 0;
+
+  cassettes.forEach((c, index) => {
+    const baseOffset = index * -220; // overlap
+    const offset = baseOffset + scrollTop * 0.05; // gentle parallax
+    c.style.transform = `translateY(${offset}px) scale(1)`;
+    c.classList.remove('pulled-out');
+    c.style.zIndex = index;
+  });
+
+  // Determine pulled-out cassette (center of container)
+  for (let i = 0; i < cassettes.length; i++) {
+    const topOffset = cassettes[i].offsetTop - container.scrollTop;
+    if (topOffset + cassettes[i].offsetHeight / 2 < containerHeight / 2) {
+      pulledIndex = i;
+    }
+  }
+
+  // Last cassette pulled-out at bottom
+  if (scrollTop + containerHeight >= container.scrollHeight - 10) {
+    pulledIndex = cassettes.length - 1;
+  }
+
+  const pulled = cassettes[pulledIndex];
+  pulled.classList.add('pulled-out');
+  const pulledOffset = pulledIndex * -220 + scrollTop * 0.05 - 70;
+  pulled.style.transform = `translateY(${pulledOffset}px) scale(1.08)`;
+  pulled.style.zIndex = 10;
+
+  // Logo fade
+  const logo = document.getElementById('site-logo');
+  const maxFadeScroll = 150;
+  logo.style.opacity = Math.max(0, 1 - scrollTop / maxFadeScroll);
+}
+
+document.getElementById('cassette-container').addEventListener('scroll', updatePulledOut);
+
+// Alphabet bar
+const alphabetBar = document.getElementById('alphabet-bar');
+const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+letters.forEach(letter => {
+  const span = document.createElement('span');
+  span.textContent = letter;
+  span.addEventListener('click', () => {
+    const cassettes = document.querySelectorAll('.cassette');
+    for (let c of cassettes) {
+      if (c.dataset.title.charAt(0).toUpperCase() === letter) {
+        document.getElementById('cassette-container').scrollTo({ top: c.offsetTop - 50, behavior: 'smooth' });
+        break;
+      }
+    }
+  });
+  alphabetBar.appendChild(span);
+});
+</script>
 
 </body>
 </html>
