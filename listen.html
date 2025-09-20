@@ -109,8 +109,9 @@ function handleQueryResponse(response) {
 
   const data = response.getDataTable();
   const container = document.getElementById('cassette-container');
+const colors = ['black', 'red', 'white'];
 
-  for (let i = 0; i < data.getNumberOfRows(); i++) {
+for (let i = 0; i < data.getNumberOfRows(); i++) {
     const title = data.getValue(i, 0);
     const spotifyLink = data.getValue(i, 2);
 
@@ -126,7 +127,10 @@ function handleQueryResponse(response) {
     const titleDiv = document.createElement('div');
     titleDiv.classList.add('cassette-title');
     titleDiv.textContent = title;
-    titleDiv.style.color = colors[Math.floor(Math.random() * colors.length)]; // random color
+
+    // Assign a consistent color per cassette using index
+    titleDiv.style.color = colors[i % colors.length];
+
     cassetteDiv.appendChild(titleDiv);
 
     cassetteDiv.addEventListener('click', () => {
