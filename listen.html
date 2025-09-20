@@ -4,63 +4,33 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Listen — 8-Track Drawer</title>
-
-  <!-- Google Fonts for randomized label text -->
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Creepster&family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
-
   <style>
     :root{
       --bg:#050507;
       --panel:#0d0d10;
       --accent:#d94f4f;
-      --width-mobile:360px; /* width of center column where tapes live */
+      --width-mobile:360px;
       --width-desktop:520px;
     }
 
-    html,body{
-      height:100%;
-      background:var(--bg);
-      color:#eee;
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-    }
+    html,body{height:100%;background:var(--bg);color:#eee;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:0}
     .container{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 12px;}
 
-    /* Top navigation / alphabet lookup */
-    .alpha-bar{
-      position:sticky;top:8px;z-index:40;
-      background:linear-gradient(180deg, rgba(5,5,6,0.9), rgba(5,5,6,0.6));
-      backdrop-filter:blur(6px);
-      padding:8px;border-radius:8px;
-      display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
-      width:100%;max-width:980px;margin-bottom:18px
-    }
-    .alpha-bar button{
-      background:transparent;
-      border:1px solid rgba(255,255,255,0.06);
-      padding:8px 10px;border-radius:6px;
-      color:#ddd;cursor:pointer;font-size:13px
-    }
+    .alpha-bar{position:sticky;top:8px;z-index:40;background:linear-gradient(180deg, rgba(5,5,6,0.9), rgba(5,5,6,0.6));backdrop-filter:blur(6px);padding:8px;border-radius:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:980px;margin-bottom:18px}
+    .alpha-bar button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:6px;color:#ddd;cursor:pointer;font-size:13px}
     .alpha-bar button.active{border-color:var(--accent);color:var(--accent)}
 
-    /* center column that holds the "drawer" */
     .stage{width:100%;max-width:calc(var(--width-desktop));display:flex;justify-content:center}
-    .drawer{
-      width:100%;max-width:var(--width-mobile);position:relative;
-      padding:36px 0 120px;
-      background:url("./assets/drawer.png") repeat-y center top;
-      background-size:100% auto;
-    }
+    .drawer{width:100%;max-width:var(--width-mobile);position:relative;padding:36px 0 120px;}
 
-    /* Each tape wrapper */
-    .tape{width:100%;height:140px;margin:-60px 0 0;display:block;position:relative;cursor:pointer;
-      transition:transform 350ms cubic-bezier(.2,.9,.2,1),opacity 250ms,filter 250ms;}
+    .tape{width:100%;height:140px;margin:-60px 0 0;display:block;position:relative;cursor:pointer;transition:transform 350ms cubic-bezier(.2,.9,.2,1),opacity 250ms,filter 250ms;}
     .tape:first-child{margin-top:0}
 
     .tape .card{width:100%;height:100%;position:relative;display:block}
     .tape img.8track{width:100%;height:100%;object-fit:contain;display:block;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,0.8);}
 
-    .label{position:absolute;left:12%;top:36%;transform:translateY(-50%);width:76%;padding-left:8px;padding-right:8px;pointer-events:none}
-    .title{font-weight:700;font-size:15px;line-height:1.05;color:#111;background:rgba(255,255,255,0.94);padding:6px 8px;border-radius:4px;display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .label{position:absolute;left:12%;top:36%;transform:translateY(-50%);width:76%;padding:0 8px;pointer-events:none}
+    .title{font-weight:700;font-size:15px;line-height:1.05;color:#111;background:rgba(255,255,255,0.94);padding:6px 8px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .meta{font-size:12px;color:rgba(17,17,17,0.7);margin-top:4px}
 
     .tape.focused{transform:translateY(-22px) scale(1.03);filter:brightness(1.02);z-index:50}
@@ -86,164 +56,155 @@
 <body>
   <div class="container">
     <div class="alpha-bar" id="alphaBar" aria-label="Alphabet lookup" role="toolbar"></div>
-
-    <div class="stage">
-      <div class="drawer" id="drawer"></div>
-    </div>
-
+    <div class="stage"><div class="drawer" id="drawer"></div></div>
     <div class="focus-marker" aria-hidden="true"></div>
   </div>
 
-  <!-- Tabletop.js for Google Sheets -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.1/tabletop.min.js"></script>
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw/edit?usp=sharing";
+    const SHEET_ID = "1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw";
+    const RANGE = "Podcast!A:C";
+    const API_KEY = "YOUR_API_KEY"; // replace with real API key
+
     const drawer = document.getElementById('drawer');
     const alphaBar = document.getElementById('alphaBar');
 
-    const cassettes = [
-      "./assets/8track.png",
-      "./assets/8track-red.png",
-      "./assets/8track-charcoal.png"
-    ];
-    const fonts = [
-      "'Press Start 2P', cursive",
-      "'Creepster', cursive",
-      "'Special Elite', cursive",
-      "'VT323', monospace"
-    ];
-
-    // Alphabet lookup
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    alphabet.forEach(letter=>{
-      const btn = document.createElement('button');
-      btn.textContent = letter;
-      btn.dataset.letter = letter;
-      btn.addEventListener('click', ()=> jumpToLetter(letter));
+    // Build alphabet bar
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(letter=>{
+      const btn=document.createElement('button');
+      btn.textContent=letter;
+      btn.dataset.letter=letter;
+      btn.addEventListener('click',()=>jumpToLetter(letter));
       alphaBar.appendChild(btn);
     });
 
-    // Fetch episodes from Google Sheet
-    function init() {
-      Tabletop.init({
-        key: sheetURL,
-        simpleSheet: false,
-        callback: showInfo
-      });
+    // Fetch episodes from Google Sheets
+    async function fetchEpisodes(){
+      const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+      const res=await fetch(url);
+      const data=await res.json();
+      if(!data.values) return [];
+      return data.values.map((row,i)=>({
+        title: row[0]||`Untitled ${i+1}`,
+        number: row[1]||`${i+1}`,
+        spotify: row[2]||"",
+        gif: `/assets/ep${i+1}.gif` // optional placeholder for previews
+      }));
     }
 
-    function showInfo(data, tabletop) {
-      const episodes = tabletop.sheets("Podcast").elements;
+    function escapeHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 
-      episodes.forEach((ep, idx)=>{
-        const tape = document.createElement('div');
-        tape.className = 'tape';
-        tape.dataset.index = idx;
-        tape.dataset.title = ep["Episode Title"] || ep["A"];
-        tape.dataset.spotify = ep["Episode Link"] || ep["C"];
-        tape.dataset.letter = tape.dataset.title.trim().charAt(0).toUpperCase();
+    function renderEpisodes(episodes){
+      drawer.innerHTML="";
+      episodes.forEach((ep,idx)=>{
+        const tape=document.createElement('div');
+        tape.className='tape';
+        tape.dataset.index=idx;
+        tape.dataset.title=ep.title;
+        tape.dataset.gif=ep.gif;
+        tape.dataset.spotify=ep.spotify;
+        tape.dataset.letter=ep.title.trim().charAt(0).toUpperCase();
 
-        tape.innerHTML = `
+        tape.innerHTML=`
           <div class="card">
-            <img class="8track" src="${cassettes[Math.floor(Math.random()*cassettes.length)]}" alt="8track cassette showing label for ${escapeHtml(ep["Episode Title"])}">
+            <img class="8track" src="assets/8track.png" alt="8track with label for ${escapeHtml(ep.title)}">
             <div class="label">
-              <div class="title" style="font-family:${fonts[Math.floor(Math.random()*fonts.length)]}">${escapeHtml(ep["Episode Title"])}</div>
-              <div class="meta">Episode ${escapeHtml(ep["Episode Number"] || ep["B"])}</div>
+              <div class="title">${escapeHtml(ep.title)}</div>
+              <div class="meta">Episode ${escapeHtml(ep.number)}</div>
             </div>
           </div>
         `;
-        tape.addEventListener('click', ()=> playThenEmbed(tape));
+
+        tape.addEventListener('click',()=>playThenEmbed(tape));
         drawer.appendChild(tape);
       });
-
-      // observe focus after render
-      Array.from(drawer.children).forEach(node=>observer.observe(node));
-      setTimeout(()=> setFocus(0), 120);
+      observeFocus();
     }
 
-    function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-
     function jumpToLetter(letter){
-      Array.from(alphaBar.children).forEach(b=>b.classList.toggle('active', b.dataset.letter===letter));
-      const first = Array.from(drawer.children).find(node=>node.dataset.letter===letter);
+      [...alphaBar.children].forEach(b=>b.classList.toggle('active',b.dataset.letter===letter));
+      const first=[...drawer.children].find(n=>n.dataset.letter===letter);
       if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
     }
 
-    const options = {root:null, rootMargin: `-34vh 0 -66vh 0`, threshold: 0.5};
-    let currentFocused = null;
-    const observer = new IntersectionObserver((entries)=>{
-      entries.forEach(entry=>{
-        if(entry.isIntersecting){
-          setFocus(parseInt(entry.target.dataset.index,10));
-        }
-      });
-    }, options);
+    // Focus tracking
+    let currentFocused=null;
+    function observeFocus(){
+      const options={root:null,rootMargin:`-34vh 0 -66vh 0`,threshold:0.5};
+      const observer=new IntersectionObserver(entries=>{
+        entries.forEach(entry=>{
+          if(entry.isIntersecting){setFocus(parseInt(entry.target.dataset.index,10));}
+        });
+      },options);
+      [...drawer.children].forEach(n=>observer.observe(n));
+    }
 
     function setFocus(index){
       if(currentFocused===index) return;
-      currentFocused = index;
-      const nodes = Array.from(drawer.children);
+      currentFocused=index;
+      const nodes=[...drawer.children];
       nodes.forEach((n,i)=>{
         n.classList.remove('focused','near');
         if(i===index) n.classList.add('focused');
         if(i===index-1) n.classList.add('near');
-        if(index < 3 && i < index && i >= index-2) n.classList.add('near');
+        if(index<3 && i<index && i>=index-2) n.classList.add('near');
       });
     }
 
+    // Gif then Spotify embed
     function playThenEmbed(tape){
-      if(tape.dataset.playing=== '1') return;
-      tape.dataset.playing = '1';
+      if(tape.dataset.playing==='1') return;
+      tape.dataset.playing='1';
 
-      const spotify = tape.dataset.spotify;
-      const card = tape.querySelector('.card');
+      const gif=tape.dataset.gif;
+      const spotify=tape.dataset.spotify;
+      const card=tape.querySelector('.card');
 
-      const replace = document.createElement('div');
-      replace.className = 'media-replace';
-      const img = document.createElement('img');
-      img.src = "./assets/8track.gif";
-      replace.appendChild(img);
+      const replace=document.createElement('div');
+      replace.className='media-replace';
+      replace.innerHTML=`<img src="${gif}" alt="${escapeHtml(tape.dataset.title)} preview">`;
 
-      const close = document.createElement('button');
-      close.textContent = '✕';
-      close.style.cssText = 'position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.4);border:0;color:#fff;padding:6px;border-radius:6px;cursor:pointer;';
+      const close=document.createElement('button');
+      close.textContent='✕';
+      close.style.cssText='position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.4);border:0;color:#fff;padding:6px;border-radius:6px;cursor:pointer;';
       replace.appendChild(close);
 
       card.appendChild(replace);
 
-      let finished = false;
-      const cleanup = ()=>{
-        if(finished) return; finished = true;
+      const cleanup=()=>{
         replace.remove();
-        const wrap = document.createElement('div'); wrap.className='player-wrap';
-        const iframe = document.createElement('iframe');
-        iframe.src = spotify; iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+        const wrap=document.createElement('div');wrap.className='player-wrap';
+        const iframe=document.createElement('iframe');
+        iframe.src=spotify;
+        iframe.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
         wrap.appendChild(iframe);
         card.appendChild(wrap);
 
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = 'Close';
-        removeBtn.style.cssText = 'margin-top:8px;padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.06);color:#fff;cursor:pointer;';
-        removeBtn.addEventListener('click', ()=>{ wrap.remove(); tape.dataset.playing='0'; });
+        const removeBtn=document.createElement('button');
+        removeBtn.textContent='Close';
+        removeBtn.style.cssText='margin-top:8px;padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.06);color:#fff;cursor:pointer;';
+        removeBtn.addEventListener('click',()=>{wrap.remove();tape.dataset.playing='0';});
         card.appendChild(removeBtn);
       };
 
-      close.addEventListener('click', ()=>{ clearTimeout(timer); cleanup(); });
-      const timer = setTimeout(()=> cleanup(), 8000);
-      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ clearTimeout(timer); cleanup(); }});
+      const timer=setTimeout(cleanup,8000);
+      close.addEventListener('click',()=>{clearTimeout(timer);cleanup();});
+      document.addEventListener('keydown',e=>{if(e.key==='Escape'){clearTimeout(timer);cleanup();}}, {once:true});
     }
 
-    document.addEventListener('keydown', (e)=>{
-      if(e.key==='ArrowDown'){ e.preventDefault(); navigate(1); }
-      if(e.key==='ArrowUp'){ e.preventDefault(); navigate(-1); }
+    // Keyboard nav
+    document.addEventListener('keydown',e=>{
+      if(e.key==='ArrowDown'){e.preventDefault();navigate(1);}
+      if(e.key==='ArrowUp'){e.preventDefault();navigate(-1);}
     });
     function navigate(dir){
-      const nodes = Array.from(drawer.children);
-      let target = Math.max(0, Math.min(nodes.length-1, (currentFocused===null?0:currentFocused) + dir));
+      const nodes=[...drawer.children];
+      let target=Math.max(0,Math.min(nodes.length-1,(currentFocused??0)+dir));
       nodes[target].scrollIntoView({behavior:'smooth',block:'center'});
     }
 
-    window.addEventListener("DOMContentLoaded", init);
+    // Init
+    fetchEpisodes().then(renderEpisodes);
+    setTimeout(()=>setFocus(0),120);
   </script>
 </body>
 </html>
