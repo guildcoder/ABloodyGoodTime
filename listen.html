@@ -1,270 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Listen - A Bloody Good Time</title>
-<link rel="stylesheet" href="style.css">
-<style>
-html, body {
-  margin: 0;
-  height: 100%;
-  overflow: hidden;
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background: #040404;
-  color: #eee;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Bloody Good Time - Listen</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; font-family: Arial, sans-serif; background: #111; color: #eee; }
 
-/* Sticky site logo */
-#site-logo {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  width: 100%;
-  text-align: center;
-  padding: 20px 0;
-  transition: opacity 0.3s ease;
-}
+    .logo {
+      display: block;
+      margin: 20px auto;
+      max-width: 240px;
+    }
 
-#site-logo img {
-  max-width: 200px;
-}
+    .alphabet {
+      text-align: center;
+      font-size: clamp(18px, 4vw, 28px);
+      line-height: 1.2;
+      padding: 20px 0 10px 0;
+    }
 
-/* Alphabet bar */
-header {
-  position: sticky;
-  top: 0;
-  background: #040404;
-  z-index: 25;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 10px 5px;
-  font-size: 16px;
-}
+    .cassette-container {
+      position: relative;
+      height: 100%;
+      overflow-y: scroll;
+      scroll-behavior: smooth;
+      padding-top: 200px; /* makes room for alphabet + drawer top */
+    }
 
-header span {
-  margin: 0 6px;
-  cursor: pointer;
-  user-select: none;
-}
+    .drawer {
+      position: fixed;
+      top: 120px; /* just under alphabet */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      height: calc(100% - 120px);
+      background: url('./assets/drawer.png') no-repeat top center;
+      background-size: contain;
+      pointer-events: none;
+      z-index: 1;
+    }
 
-/* Drawer background */
-#drawer {
-  position: absolute;
-  top: 80px; /* below alphabet */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 320px; /* slightly wider than cassettes */
-  height: calc(100% - 80px); /* stretch to bottom */
-  background: url('assets/drawer.png') no-repeat top center;
-  background-size: contain;
-  z-index: 0;
-}
+    .cassette {
+      position: relative;
+      width: 300px;
+      margin: 40px auto;
+      transition: transform 0.3s ease, filter 0.3s ease;
+      z-index: 2;
+    }
 
-/* Cassette container */
-#cassette-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow-y: scroll;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 200px;
-  box-sizing: border-box;
-}
+    .cassette img {
+      width: 100%;
+      display: block;
+    }
 
-.cassette {
-  position: relative;
-  margin-bottom: -220px;
-  width: 250px;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s ease;
-}
+    .cassette-text {
+      padding: 0 30px 0 20px;
+      font-size: 14px;
+      line-height: 1.3;
+      color: white;
+      margin-top: 8px;
+    }
 
-.cassette img {
-  width: 100%;
-  display: block;
-  border-radius: 10px;
-}
-
-.cassette-title {
-  position: absolute;
-  top: 80px;
-  width: 100%;
-  text-align: center;
-  font-weight: bold;
-  font-size: 14px;
-  pointer-events: none;
-  padding-left: 20px;
-  padding-right: 30px;
-}
-
-.pulled-out {
-  z-index: 10;
-}
-
-.pulled-out img {
-  box-shadow: 0 15px 25px rgba(0,0,0,0.5);
-  border-radius: 10px;
-}
-
-@media(min-width: 768px){
-  .cassette { width: 300px; }
-  .cassette-title { font-size: 16px; top: 80px; }
-}
-</style>
+    .cassette.focused {
+      transform: scale(1.1) translateY(-10px);
+      filter: brightness(1.2);
+      z-index: 3;
+    }
+  </style>
 </head>
 <body>
+  <img src="./assets/logo.png" alt="A Bloody Good Time" class="logo">
+  <div class="alphabet">A&nbsp;B&nbsp;C&nbsp;D&nbsp;E&nbsp;F&nbsp;G&nbsp;H&nbsp;I&nbsp;J&nbsp;K&nbsp;L&nbsp;M&nbsp;N&nbsp;O&nbsp;P&nbsp;Q&nbsp;R&nbsp;S&nbsp;T&nbsp;U&nbsp;V&nbsp;W&nbsp;X&nbsp;Y&nbsp;Z</div>
 
-<div id="site-logo">
-  <img src="assets/logo.png" alt="A Bloody Good Time Logo">
-</div>
+  <div class="drawer"></div>
 
-<header id="alphabet-bar"></header>
+  <div class="cassette-container" id="cassetteContainer">
+    <div class="cassette"><img src="./assets/8track.png" alt=""><div class="cassette-text">First Tape</div></div>
+    <div class="cassette"><img src="./assets/8track-red.png" alt=""><div class="cassette-text">Second Tape</div></div>
+    <div class="cassette"><img src="./assets/8track-blue.png" alt=""><div class="cassette-text">Third Tape</div></div>
+    <div class="cassette"><img src="./assets/8track-green.png" alt=""><div class="cassette-text">Fourth Tape</div></div>
+    <div class="cassette"><img src="./assets/8track-yellow.png" alt=""><div class="cassette-text">Fifth Tape</div></div>
+  </div>
 
-<div id="drawer"></div>
-<div id="cassette-container"></div>
+  <script>
+    const container = document.getElementById('cassetteContainer');
+    const cassettes = Array.from(container.getElementsByClassName('cassette'));
+    const topOffset = 200; // matches padding-top above
 
-<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-<script>
-google.charts.load('current', {'packages':['corechart']});
-google.charts.setOnLoadCallback(drawCassettes);
+    let currentScroll = 0;
+    let targetScroll = 0;
 
-const sheetURL = 'https://docs.google.com/spreadsheets/d/1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw/gviz/tq?sheet=Podcast&headers=1';
-const images = ['assets/8track.png','assets/8track-red.png','assets/8track-charcoal.png'];
-const colors = ['black', 'white'];
-
-function drawCassettes() {
-  const query = new google.visualization.Query(sheetURL);
-  query.send(handleQueryResponse);
-}
-
-function handleQueryResponse(response) {
-  if (response.isError()) {
-    console.error('Error fetching data: ' + response.getMessage());
-    return;
-  }
-
-  const data = response.getDataTable();
-  const container = document.getElementById('cassette-container');
-
-  for (let i = 0; i < data.getNumberOfRows(); i++) {
-    const title = data.getValue(i, 0);
-    const spotifyLink = data.getValue(i, 2);
-
-    const cassetteDiv = document.createElement('div');
-    cassetteDiv.classList.add('cassette');
-    cassetteDiv.dataset.spotify = spotifyLink;
-    cassetteDiv.dataset.title = title;
-
-    const img = document.createElement('img');
-    img.src = images[i % images.length];
-    cassetteDiv.appendChild(img);
-
-    const titleDiv = document.createElement('div');
-    titleDiv.classList.add('cassette-title');
-    titleDiv.textContent = title;
-    titleDiv.style.color = colors[i % colors.length];
-    cassetteDiv.appendChild(titleDiv);
-
-    cassetteDiv.addEventListener('click', () => {
-      window.open(spotifyLink, '_blank');
+    container.addEventListener('scroll', () => {
+      targetScroll = container.scrollTop;
     });
 
-    container.appendChild(cassetteDiv);
-  }
+    function animate() {
+      currentScroll += (targetScroll - currentScroll) * 0.12;
 
-  requestAnimationFrame(smoothScroll); // start smooth scrolling
-}
+      let pulledIndex = Math.round((currentScroll - topOffset) / 220);
+      pulledIndex = Math.max(0, Math.min(cassettes.length - 1, pulledIndex));
 
-// Smooth scroll variables
-let targetScroll = 0;
-let currentScroll = 0;
-const container = document.getElementById('cassette-container');
+      cassettes.forEach((cassette, index) => {
+        cassette.classList.toggle('focused', index === pulledIndex);
+      });
 
-container.addEventListener('scroll', () => {
-  targetScroll = container.scrollTop;
-});
-
-// Smooth animation loop
-function smoothScroll() {
-  currentScroll += (targetScroll - currentScroll) * 0.12; // slightly faster easing
-  updatePulledOutSmooth(currentScroll);
-  requestAnimationFrame(smoothScroll);
-}
-
-// Pulled-out cassette logic using smoothed scroll
-function updatePulledOutSmooth(scrollTop) {
-  const cassettes = document.querySelectorAll('.cassette');
-  const containerHeight = container.offsetHeight;
-  let pulledIndex = 0;
-
-  cassettes.forEach((c, index) => {
-    const baseOffset = index * -220; 
-    const parallaxFactor = 0.04 + (index * 0.002); // subtle depth effect
-    const offset = baseOffset + scrollTop * parallaxFactor;
-    c.style.transform = `translateY(${offset}px) scale(1)`;
-    c.classList.remove('pulled-out');
-    c.style.zIndex = index;
-  });
-
-  for (let i = 0; i < cassettes.length; i++) {
-    const topOffset = cassettes[i].offsetTop - scrollTop;
-    if (topOffset + cassettes[i].offsetHeight / 2 < containerHeight / 2) {
-      pulledIndex = i;
+      requestAnimationFrame(animate);
     }
-  }
 
-  if (scrollTop + containerHeight >= container.scrollHeight - 10) {
-    pulledIndex = cassettes.length - 1;
-  }
-
-  const pulled = cassettes[pulledIndex];
-  pulled.classList.add('pulled-out');
-
-  let pulledOffset = pulledIndex * -220 + scrollTop * 0.05 - 70;
-
-  // clamp top
-  if (pulledIndex === 0) {
-    pulledOffset = Math.max(pulledOffset, -20);
-  }
-
-  // clamp bottom
-  if (pulledIndex === cassettes.length - 1) {
-    pulledOffset = Math.min(pulledOffset, containerHeight / 2 - 150);
-  }
-
-  pulled.style.transform = `translateY(${pulledOffset}px) scale(1.08)`;
-  pulled.style.zIndex = 10;
-
-  // Logo fade out
-  const logo = document.getElementById('site-logo');
-  const maxFadeScroll = 150;
-  logo.style.opacity = Math.max(0, 1 - scrollTop / maxFadeScroll);
-}
-
-// Alphabet bar
-const alphabetBar = document.getElementById('alphabet-bar');
-const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-letters.forEach(letter => {
-  const span = document.createElement('span');
-  span.textContent = letter;
-  span.addEventListener('click', () => {
-    const cassettes = document.querySelectorAll('.cassette');
-    for (let c of cassettes) {
-      if (c.dataset.title.charAt(0).toUpperCase() === letter) {
-        container.scrollTo({ top: c.offsetTop - 50, behavior: 'smooth' });
-        targetScroll = c.offsetTop - 50; // update targetScroll for smooth scroll
-        break;
-      }
-    }
-  });
-  alphabetBar.appendChild(span);
-});
-</script>
-
+    animate();
+  </script>
 </body>
 </html>
