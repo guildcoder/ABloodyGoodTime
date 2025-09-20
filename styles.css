@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Bloody Good Time</title>
+<style>
 /* Basic reset */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,7 +27,13 @@ html, body {
   text-decoration:none; color:#fff; border-radius:16px; background: linear-gradient(180deg, rgba(40,0,0,0.08), rgba(0,0,0,0.4));
   padding:12px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); transform: translateY(0); transition: transform .18s ease, box-shadow .18s;
 }
-.home-card img { width:72px; height:72px; object-fit:contain; margin-bottom:8px; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.7)); }
+.home-card img { 
+  width: 94px;  /* 72px * 1.3 = 94px */
+  height: 94px; 
+  object-fit:contain; 
+  margin-bottom:8px; 
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.7)); 
+}
 .home-card span { font-weight:700; letter-spacing:0.6px; font-size:0.98rem; }
 
 /* hover */
@@ -59,3 +72,55 @@ html, body {
   .logo { max-width:170px; }
   .modal .modal-inner { margin:12px; padding:16px; }
 }
+</style>
+</head>
+<body>
+
+<div class="home-main">
+
+  <div class="home-grid">
+    <a href="listen.html" class="home-card" data-gif="./assets/My project.gif">
+      <img src="./assets/listen.png" alt="Listen">
+      <span>Listen</span>
+    </a>
+    <a href="watch.html" class="home-card" data-gif="./assets/IMG_8633.gif">
+      <img src="./assets/watch.png" alt="Watch">
+      <span>Watch</span>
+    </a>
+    <a href="https://shop.example.com" target="_blank" class="home-card" data-gif="./assets/IMG_8627.gif">
+      <img src="./assets/shop.png" alt="Shop">
+      <span>Shop</span>
+    </a>
+  </div>
+
+</div>
+
+<script>
+document.querySelectorAll('.home-card').forEach(card => {
+  card.addEventListener('click', function(e) {
+    e.preventDefault(); // prevent immediate navigation
+
+    const img = this.querySelector('img');
+    const originalSrc = img.src;
+    const gifSrc = this.dataset.gif;
+
+    // Replace icon with GIF
+    img.src = gifSrc;
+
+    // Optional: Disable hover effect while GIF plays
+    this.style.pointerEvents = 'none';
+
+    // Wait 3 seconds then navigate
+    setTimeout(() => {
+      if (this.target === '_blank') {
+        window.open(this.href, '_blank');
+      } else {
+        window.location.href = this.href;
+      }
+    }, 3000);
+  });
+});
+</script>
+
+</body>
+</html>
