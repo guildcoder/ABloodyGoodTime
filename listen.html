@@ -191,7 +191,7 @@ container.addEventListener('scroll', () => {
 
 // Smooth animation loop
 function smoothScroll() {
-  currentScroll += (targetScroll - currentScroll) * 0.1; // easing factor
+  currentScroll += (targetScroll - currentScroll) * 0.12; // slightly faster easing
   updatePulledOutSmooth(currentScroll);
   requestAnimationFrame(smoothScroll);
 }
@@ -204,7 +204,8 @@ function updatePulledOutSmooth(scrollTop) {
 
   cassettes.forEach((c, index) => {
     const baseOffset = index * -220; 
-    const offset = baseOffset + scrollTop * 0.05;
+    const parallaxFactor = 0.04 + (index * 0.002); // subtle depth effect
+    const offset = baseOffset + scrollTop * parallaxFactor;
     c.style.transform = `translateY(${offset}px) scale(1)`;
     c.classList.remove('pulled-out');
     c.style.zIndex = index;
@@ -223,10 +224,23 @@ function updatePulledOutSmooth(scrollTop) {
 
   const pulled = cassettes[pulledIndex];
   pulled.classList.add('pulled-out');
-  const pulledOffset = pulledIndex * -220 + scrollTop * 0.05 - 70;
+
+  let pulledOffset = pulledIndex * -220 + scrollTop * 0.05 - 70;
+
+  // clamp top
+  if (pulledIndex === 0) {
+    pulledOffset = Math.max(pulledOffset, -20);
+  }
+
+  // clamp bottom
+  if (pulledIndex === cassettes.length - 1) {
+    pulledOffset = Math.min(pulledOffset, containerHeight / 2 - 150);
+  }
+
   pulled.style.transform = `translateY(${pulledOffset}px) scale(1.08)`;
   pulled.style.zIndex = 10;
 
+  // Logo fade out
   const logo = document.getElementById('site-logo');
   const maxFadeScroll = 150;
   logo.style.opacity = Math.max(0, 1 - scrollTop / maxFadeScroll);
