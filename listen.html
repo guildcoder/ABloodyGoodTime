@@ -49,6 +49,20 @@ header span {
   user-select: none;
 }
 
+/* Drawer background */
+#drawer {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px; /* slightly wider than cassettes */
+  height: 100%;
+  background: url('assets/drawer.png') no-repeat top center;
+  background-size: contain;
+  z-index: 0; /* behind cassettes */
+  padding-top: 50px; /* space for logo + alphabet */
+}
+
 /* Cassette container */
 #cassette-container {
   position: absolute;
@@ -68,7 +82,7 @@ header span {
   position: relative;
   margin-bottom: -220px; /* tighter overlap */
   width: 250px;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.3s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s ease; /* faster pull-out */
 }
 
 .cassette img {
@@ -93,6 +107,10 @@ header span {
   z-index: 10; /* ensures pulled cassette pops above others */
 }
 
+.pulled-out img {
+  box-shadow: 0 15px 25px rgba(0,0,0,0.5); /* subtle shadow for depth */
+}
+
 @media(min-width: 768px){
   .cassette { width: 300px; }
   .cassette-title { font-size: 16px; top: 80px; }
@@ -107,6 +125,7 @@ header span {
 
 <header id="alphabet-bar"></header>
 
+<div id="drawer"></div>
 <div id="cassette-container"></div>
 
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
