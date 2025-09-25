@@ -64,12 +64,10 @@
     margin-bottom: -200px;
     width: 250px;
     transition: transform 0.3s ease, z-index 0.3s ease;
-    background: #111;
-    padding: 10px;
     border-radius: 10px;
   }
 
-  .cassette img { width: 100%; display: block; border-radius: 10px; }
+  .cassette img { width: 100%; display: block; border-radius: 10px; cursor: pointer; }
 
   .cassette-title {
     position: absolute;
@@ -81,15 +79,10 @@
     pointer-events: none;
     padding-left: 20px;
     padding-right: 30px;
+    color: white;
   }
 
   .pulled-out { transform: translateY(-50px) scale(1.05); z-index: 5; }
-
-  audio {
-    width: 100%;
-    margin-top: 10px;
-    outline: none;
-  }
 
   @media(min-width: 768px){
     .cassette { width: 300px; }
@@ -131,30 +124,27 @@ function handleQueryResponse(response) {
   for (let i = 0; i < data.getNumberOfRows(); i++) {
     const imgURL = data.getValue(i, 0); // Column A = image URL
     const title = data.getValue(i, 1);  // Column B = title
-    const audioLink = data.getValue(i, 2); // Column C = audio RSS/MP3
+    const playerLink = data.getValue(i, 2); // Column C = episode player link
 
     const cassetteDiv = document.createElement('div');
     cassetteDiv.classList.add('cassette');
     cassetteDiv.dataset.title = title;
 
     if (imgURL) {
+      const link = document.createElement('a');
+      link.href = playerLink;
+      link.target = "_blank";
+
       const img = document.createElement('img');
       img.src = imgURL;
-      cassetteDiv.appendChild(img);
+      link.appendChild(img);
+      cassetteDiv.appendChild(link);
     }
 
     const titleDiv = document.createElement('div');
     titleDiv.classList.add('cassette-title');
     titleDiv.textContent = title;
-    titleDiv.style.color = 'white';
     cassetteDiv.appendChild(titleDiv);
-
-    if (audioLink) {
-      const audio = document.createElement('audio');
-      audio.controls = true;
-      audio.src = audioLink;
-      cassetteDiv.appendChild(audio);
-    }
 
     container.appendChild(cassetteDiv);
   }
