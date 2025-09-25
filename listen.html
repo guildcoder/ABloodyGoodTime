@@ -9,13 +9,12 @@
   html, body {
     margin: 0;
     height: 100%;
-    overflow: hidden; /* lock page scroll */
+    overflow: hidden;
     font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     background: #040404;
     color: #eee;
   }
 
-  /* Logo on top */
   #site-logo {
     position: sticky;
     top: 0;
@@ -26,9 +25,7 @@
     transition: opacity 0.3s ease;
   }
 
-  #site-logo img {
-    max-width: 200px;
-  }
+  #site-logo img { max-width: 200px; }
 
   header {
     position: sticky;
@@ -36,10 +33,10 @@
     background: #040404;
     z-index: 25;
     display: flex;
-    flex-wrap: wrap; /* allows multiple lines */
+    flex-wrap: wrap;
     justify-content: center;
     padding: 10px 5px;
-    font-size: 16px; /* slightly smaller */
+    font-size: 16px;
   }
 
   header span {
@@ -58,38 +55,40 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 200px; /* space for logo + alphabet + breathing room */
+    padding-top: 200px;
     box-sizing: border-box;
   }
 
   .cassette {
     position: relative;
-    margin-bottom: -200px; /* overlap effect */
+    margin-bottom: -200px;
     width: 250px;
     transition: transform 0.3s ease, z-index 0.3s ease;
-  }
-
-  .cassette img {
-    width: 100%;
-    display: block;
+    background: #111;
+    padding: 10px;
     border-radius: 10px;
   }
 
+  .cassette img { width: 100%; display: block; border-radius: 10px; }
+
   .cassette-title {
     position: absolute;
-    top: 80px; /* label placement */
+    top: 80px;
     width: 100%;
     text-align: center;
     font-weight: bold;
-    font-size: 14px; /* slightly smaller */
+    font-size: 14px;
     pointer-events: none;
     padding-left: 20px;
     padding-right: 30px;
   }
 
-  .pulled-out {
-    transform: translateY(-50px) scale(1.05);
-    z-index: 5;
+  .pulled-out { transform: translateY(-50px) scale(1.05); z-index: 5; }
+
+  audio {
+    width: 100%;
+    margin-top: 10px;
+    outline: none;
   }
 
   @media(min-width: 768px){
@@ -114,8 +113,6 @@ google.charts.load('current', {'packages':['corechart']});
 google.charts.setOnLoadCallback(drawCassettes);
 
 const sheetURL = 'https://docs.google.com/spreadsheets/d/1YhKiPh70p96zndU2cvtgEhvClq2a3n-MWy0QGpWS3Pw/gviz/tq?sheet=Podcast&headers=1';
-const images = ['assets/8track.png','assets/8track-red.png','assets/8track-charcoal.png'];
-const colors = ['black', 'white'];
 
 function drawCassettes() {
   const query = new google.visualization.Query(sheetURL);
@@ -132,27 +129,32 @@ function handleQueryResponse(response) {
   const container = document.getElementById('cassette-container');
 
   for (let i = 0; i < data.getNumberOfRows(); i++) {
-    const title = data.getValue(i, 0);
-    const spotifyLink = data.getValue(i, 2);
+    const imgURL = data.getValue(i, 0); // Column A = image URL
+    const title = data.getValue(i, 1);  // Column B = title
+    const audioLink = data.getValue(i, 2); // Column C = audio RSS/MP3
 
     const cassetteDiv = document.createElement('div');
     cassetteDiv.classList.add('cassette');
-    cassetteDiv.dataset.spotify = spotifyLink;
     cassetteDiv.dataset.title = title;
 
-    const img = document.createElement('img');
-    img.src = images[i % images.length];
-    cassetteDiv.appendChild(img);
+    if (imgURL) {
+      const img = document.createElement('img');
+      img.src = imgURL;
+      cassetteDiv.appendChild(img);
+    }
 
     const titleDiv = document.createElement('div');
     titleDiv.classList.add('cassette-title');
     titleDiv.textContent = title;
-    titleDiv.style.color = colors[i % colors.length]; // black or white
+    titleDiv.style.color = 'white';
     cassetteDiv.appendChild(titleDiv);
 
-    cassetteDiv.addEventListener('click', () => {
-      window.open(spotifyLink, '_blank');
-    });
+    if (audioLink) {
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.src = audioLink;
+      cassetteDiv.appendChild(audio);
+    }
 
     container.appendChild(cassetteDiv);
   }
@@ -177,14 +179,12 @@ function updatePulledOut() {
     }
   }
 
-  // Pull-out last cassette if scrolled to bottom
   if (scrollTop + containerHeight >= container.scrollHeight - 10) {
     pulledIndex = cassettes.length - 1;
   }
 
   cassettes[pulledIndex].classList.add('pulled-out');
 
-  // Logo fade effect on scroll
   const logo = document.getElementById('site-logo');
   const maxFadeScroll = 150;
   logo.style.opacity = Math.max(0, 1 - scrollTop / maxFadeScroll);
